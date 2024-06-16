@@ -55,11 +55,3 @@ def load_model(
     decoder.to(device)
     model = Spec2MIDI(encoder, decoder)
     return model
-
-
-def wave2midi(input_path, output_path, model_path, config):
-    pipeline = AMT(config, model_path)
-    a_feature = pipeline.wav2feature(input_path)
-    _, _, _, _, onset, offset, mpe, velocity = pipeline.transcript(a_feature)
-    note = pipeline.mpe2note(onset, offset, mpe, velocity)
-    pipeline.note2midi(note, output_path)

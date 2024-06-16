@@ -5,24 +5,6 @@ from .hFT_Transformer.model_spec2midi import Model_SPEC2MIDI
 from .utils import load_model
 
 
-DEFAULT_ARGS = {
-    "f_config": "../corpus/config.json",
-    "f_list": "../corpus/MAESTRO-V3/list/test.list",
-    "d_cp": "../checkpoint",
-    "m": "best_model.pkl",
-    "mode": "combination",
-    "d_wav": "../corpus/MAESTRO-V3/wav",
-    "d_fe": "../corpus/MAESTRO-V3/feature",
-    "d_mpe": "result/mpe",
-    "d_note": "result/note",
-    "thred_mpe": 0.5,
-    "thred_onset": 0.5,
-    "thred_offset": 0.5,
-    "calc_feature": False,
-    "calc_transcript": False,
-    "n_stride": 0,
-    "ablation": False
-}
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
 
@@ -47,5 +29,3 @@ class Pipeline(AMT):
         _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature)
         note = self.mpe2note(onset, offset, mpe, velocity)
         self.note2midi(note, output_path)
-
-
