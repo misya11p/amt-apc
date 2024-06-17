@@ -16,14 +16,18 @@ class Pipeline(AMT):
         amt=False,
         encoder_path=None,
         decoder_path=None,
+        skip_load_model=False,
     ):
         self.device = device
-        self.model = load_model(
-            device=self.device,
-            amt=amt,
-            encoder_path=encoder_path,
-            decoder_path=decoder_path,
-        )
+        if skip_load_model:
+            self.model = None
+        else:
+            self.model = load_model(
+                device=self.device,
+                amt=amt,
+                encoder_path=encoder_path,
+                decoder_path=decoder_path,
+            )
         self.config = CONFIG["data"]
 
     def wav2midi(self, input_path, output_path):
