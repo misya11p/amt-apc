@@ -12,19 +12,18 @@ with open("models/config.json", "r") as f:
 class Pipeline(AMT):
     def __init__(
         self,
-        device=torch.device("cpu"),
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         amt=False,
         encoder_path=None,
         decoder_path=None,
     ):
         self.device = device
         self.model = load_model(
+            device=self.device,
             amt=amt,
             encoder_path=encoder_path,
             decoder_path=decoder_path,
-            device=self.device
         )
-        self.batch_size = 1
         self.config = CONFIG["data"]
 
     def wav2midi(self, input_path, output_path):

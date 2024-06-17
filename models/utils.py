@@ -13,7 +13,7 @@ with open("models/config.json", "r") as f:
 
 
 def load_model(
-    device=torch.device("cpu"),
+    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
     encoder_path=None,
     decoder_path=None,
