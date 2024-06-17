@@ -1,7 +1,6 @@
 import json
 import torch
 from .hFT_Transformer.amt import AMT
-from .hFT_Transformer.model_spec2midi import Model_SPEC2MIDI
 from .utils import load_model
 
 
