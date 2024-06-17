@@ -13,10 +13,10 @@ with open("models/config.json", "r") as f:
 
 
 def load_model(
+    device=torch.device("cpu"),
     amt: bool = False,
     encoder_path=None,
     decoder_path=None,
-    device=torch.device("cpu"),
 ):
     if amt:
         encoder_path = encoder_path or CONFIG["default"]["amt_encoder"]

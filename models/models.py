@@ -10,11 +10,14 @@ with open("models/config.json", "r") as f:
 
 
 class Pipeline(AMT):
-    def __init__(self, amt=False, device=None, encoder_path=None, decoder_path=None):
-        if device is None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        else:
-            self.device = device
+    def __init__(
+        self,
+        device=torch.device("cpu"),
+        amt=False,
+        encoder_path=None,
+        decoder_path=None,
+    ):
+        self.device = device
         self.model = load_model(
             amt=amt,
             encoder_path=encoder_path,
