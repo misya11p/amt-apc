@@ -4,7 +4,6 @@ import pickle
 import torch
 
 
-
 AMT_URL = "https://github.com/sony/hFT-Transformer/releases/download/ismir2023/checkpoint.zip"
 DEFAULT_NAMES = {
     "amt_encoder": "models/params/amt_encoder.pth",
@@ -13,14 +12,18 @@ DEFAULT_NAMES = {
 }
 
 def main():
+    print("Downloading AMT model.")
     subprocess.run(["wget", AMT_URL])
     subprocess.run(["unzip", "checkpoint.zip"], )
 
+    print("Saving AMT model and setting config.")
     set_config()
     save_amt()
 
     subprocess.run(["rm", "checkpoint.zip"])
     subprocess.run(["rm", "-r", "checkpoint"])
+
+    print("Done.")
 
 
 DATA_CONFIG_PATH = "models/hFT_Transformer/config.json"
@@ -49,6 +52,7 @@ class CustomUnpickler(pickle.Unpickler):
         if module.startswith("model"):
             module = module.replace("model", "models.hFT_Transformer", 1)
         return super().find_class(module, name)
+
 
 AMT_PATH = "checkpoint/MAESTRO-V3/model_016_003.pkl"
 def save_amt():
