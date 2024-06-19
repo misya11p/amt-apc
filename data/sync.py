@@ -5,8 +5,6 @@
 
 import os
 from contextlib import redirect_stdout
-import warnings
-import time
 
 import numpy as np
 from synctoolbox.dtw.mrmsdtw import sync_via_mrmsdtw
@@ -91,6 +89,9 @@ import argparse
 from pathlib import Path
 import shutil
 import multiprocessing
+import warnings
+import time
+
 
 import librosa
 import soundfile as sf
