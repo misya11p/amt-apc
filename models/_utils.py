@@ -1,6 +1,5 @@
 import json
 import torch
-from .hFT_Transformer.amt import AMT
 from .hFT_Transformer.model_spec2midi import (
     Model_SPEC2MIDI as Spec2MIDI,
     Encoder_SPEC2MIDI as Encoder,
@@ -13,11 +12,30 @@ with open("models/config.json", "r") as f:
 
 
 def load_model(
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
-    encoder_path=None,
-    decoder_path=None,
-):
+    encoder_path: str | None = None,
+    decoder_path: str | None = None,
+) -> Spec2MIDI:
+    """
+    Load the model according to models/config.json.
+
+    Args:
+        device (torch.device, optional):
+            Device to use for the model. Defaults to
+            torch.device("cuda" if torch.cuda.is_available() else "cpu").
+        amt (bool, optional):
+            Whether to use the AMT model.
+            Defaults to False (use the cover model).
+        encoder_path (str, optional):
+            Path to the encoder model.
+            Defaults to None (use the default path).
+        decoder_path (str, optional):
+            Path to the decoder model.
+            Defaults to None (use the default path).
+    Returns:
+        Spec2MIDI: Model.
+    """
     if amt:
         encoder_path = encoder_path or CONFIG["default"]["amt_encoder"]
     else:
