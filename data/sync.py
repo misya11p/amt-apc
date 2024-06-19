@@ -115,7 +115,6 @@ def main(args):
 
 def sync_song(dir_song, dir_output, sr=None):
     start_time = time.time()
-
     file_orig = next(dir_song.glob("*.wav"))
     y_orig, sr = librosa.load(str(file_orig), sr=sr)
     dir_output_song = dir_output / dir_song.name
@@ -130,7 +129,7 @@ def sync_song(dir_song, dir_output, sr=None):
         sf.write(str(dir_output_song_piano / piano.name), y_piano_synced, sr)
 
     running_time = time.strftime("%Mm %Ss", time.gmtime(time.time() - start_time))
-    print(f"Synced ({i} pianos) '{dir_song.name}' in {running_time} seconds.")
+    print(f"Synced ({i} pianos) '{dir_song.name}' in {running_time}.")
 
 
 if __name__ == "__main__":
