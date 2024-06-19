@@ -10,8 +10,8 @@ import time
 
 import numpy as np
 from synctoolbox.dtw.mrmsdtw import sync_via_mrmsdtw
-from synctoolbox.dtw.utils import compute_optimal_chroma_shift, make_path_strictly_monotonic
-from synctoolbox.feature.chroma import pitch_to_chroma, quantize_chroma, quantized_chroma_to_CENS
+from synctoolbox.dtw.utils import make_path_strictly_monotonic
+from synctoolbox.feature.chroma import pitch_to_chroma, quantize_chroma
 from synctoolbox.feature.dlnco import pitch_onset_features_to_DLNCO
 from synctoolbox.feature.pitch import audio_to_pitch_features
 from synctoolbox.feature.pitch_onset import audio_to_pitch_onset_features
