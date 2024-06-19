@@ -48,7 +48,22 @@ def get_features_from_audio(audio, tuning_offset, sr):
     return f_chroma_quantized, f_DLNCO
 
 
-def sync_audio(y_source, y_target, sr):
+def sync_audio(
+    y_source: np.ndarray,
+    y_target: np.ndarray,
+    sr: int,
+) -> np.ndarray:
+    """
+    Synchronize the source audio with the target audio.
+
+    Args:
+        y_source (np.ndarray): Source audio. (n_samples,)
+        y_target (np.ndarray): Target audio. (n_samples,)
+        sr (int): Sample rate.
+
+    Returns:
+        np.ndarray: Synchronized source audio. (n_samples,)
+    """
     tuning_offset_source = estimate_tuning(y_source, sr)
     tuning_offset_target = estimate_tuning(y_target, sr)
 
@@ -110,10 +125,20 @@ def main(args):
 
     sync_args = [(song, dir_output, args.sr) for song in dir_input.glob("*/")]
     with multiprocessing.Pool(args.n_processes) as pool:
-        pool.starmap(sync_song, sync_args)
+        pool.starmap(_sync_song, sync_args)
 
 
-def sync_song(dir_song, dir_output, sr=None):
+def _sync_song(dir_song: str, dir_output: str, sr: int | None = None):
+    """
+    Synchronize the piano audio with the original audio in givendirectory.
+
+    Args:
+        dir_song (str): Directory containing piano and original audio.
+        dir_output (str): Directory to save the synced audio files.
+        sr (int | None, optional):
+            Sample rate of the audio files. If None, use the default
+            sample rate of librosa (22050). Defaults to None.
+    """
     start_time = time.time()
     orig = next(dir_song.glob("*.wav"))
     y_orig, sr = librosa.load(str(orig), sr=sr)
