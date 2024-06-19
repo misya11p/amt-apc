@@ -130,11 +130,12 @@ def main(args):
 
 def _sync_song(dir_song: str, dir_output: str, sr: int | None = None):
     """
-    Synchronize the piano audio with the original audio in givendirectory.
+    Synchronize the piano audio with the original audio in given song
+    directory.
 
     Args:
-        dir_song (str): Directory containing piano and original audio.
-        dir_output (str): Directory to save the synced audio files.
+        dir_song (str): Path to the song directory.
+        dir_output (str): Path to the output directory.
         sr (int | None, optional):
             Sample rate of the audio files. If None, use the default
             sample rate of librosa (22050). Defaults to None.

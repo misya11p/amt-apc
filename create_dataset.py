@@ -28,7 +28,15 @@ def main(args):
         pool.starmap(save_feature, save_args)
 
 
-def save_feature(dir_song, dir_output):
+def save_feature(dir_song: str, dir_output: str):
+    """
+    Convert the audio files in given song directory to features and save
+    them in a single '.pth' file.
+
+    Args:
+        dir_song (str): Path to the song directory.
+        dir_output (str): Path to the output directory.
+    """
     features = []
     orig = next(dir_song.glob("*.wav"))
     feature_orig = wav2feature(str(orig))
