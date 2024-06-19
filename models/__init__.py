@@ -1,2 +1,2 @@
-from .models import Pipeline
-from .utils import load_model
+from ._models import Pipeline
+from ._utils import load_model

@@ -1,7 +1,7 @@
 import json
 import torch
 from .hFT_Transformer.amt import AMT
-from .utils import load_model
+from ._utils import load_model
 
 
 with open("models/config.json", "r") as f:
