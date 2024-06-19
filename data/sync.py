@@ -115,11 +115,11 @@ def main(args):
 
 def sync_song(dir_song, dir_output, sr=None):
     start_time = time.time()
-    file_orig = next(dir_song.glob("*.wav"))
-    y_orig, sr = librosa.load(str(file_orig), sr=sr)
+    orig = next(dir_song.glob("*.wav"))
+    y_orig, sr = librosa.load(str(orig), sr=sr)
     dir_output_song = dir_output / dir_song.name
     dir_output_song.mkdir(exist_ok=True)
-    shutil.copy(file_orig, dir_output_song / file_orig.name)
+    shutil.copy(orig, dir_output_song / orig.name)
 
     dir_output_song_piano = dir_output_song / DIR_NAME_PIANO
     dir_output_song_piano.mkdir(exist_ok=True)
