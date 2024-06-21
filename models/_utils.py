@@ -72,4 +72,6 @@ def load_model(
     encoder.to(device)
     decoder.to(device)
     model = Spec2MIDI(encoder, decoder)
+    model.encoder = encoder # alias
+    model.decoder = decoder # alias
     return model
