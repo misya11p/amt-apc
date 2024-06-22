@@ -8,7 +8,7 @@ AMT_URL = "https://github.com/sony/hFT-Transformer/releases/download/ismir2023/c
 DEFAULT_NAMES = {
     "encoder": "models/params/encoder.pth",
     "decoder_amt": "models/params/decoder_amt.pth",
-    "decoder_pc": "models/params/decode_pcr.pth",
+    "decoder_pc": "models/params/decode_pc.pth",
 }
 
 def main():
