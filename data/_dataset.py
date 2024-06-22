@@ -1,4 +1,5 @@
 import json
+import random
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -46,6 +47,7 @@ class SyncedPianoDataset(Dataset):
 class SyncedPianos:
     def __init__(self, dir_specs, n_frames, batch_size=1):
         self.data = list(dir_specs.glob("*.pth"))
+        random.shuffle(self.data)
         self.n_frames = n_frames
         self.batch_size = batch_size
 
@@ -58,9 +60,11 @@ class SyncedPianos:
 
     def __getitem__(self, idx):
         dataset = SyncedPianoDataset(self.data[idx], self.n_frames)
-        dataloader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
-        return dataloader
+        if len(dataset):
+            dataloader = DataLoader(
+                dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+            )
+            return dataloader
+        return None
