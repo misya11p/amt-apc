@@ -149,21 +149,29 @@ def _sync_song(
             sample rate of librosa (22050). Defaults to None.
     """
     dir_output_song = dir_output / dir_song.name
-    if (not overwrite) and dir_output_song.exists():
-        return
 
     start_time = time.time()
     orig = next(dir_song.glob("*.wav"))
-    y_orig, sr = librosa.load(str(orig), sr=sr)
-    dir_output_song.mkdir(exist_ok=True)
-    shutil.copy(orig, dir_output_song / orig.name)
+    orig_new = dir_output_song / orig.name
+    flag_load_orig = False
+
+    if overwrite or (not orig_new.exists()):
+        dir_output_song.mkdir(exist_ok=True)
+        y_orig, sr = librosa.load(str(orig), sr=sr)
+        flag_load_orig = True
+        shutil.copy(orig, str(orig_new))
 
     dir_output_song_piano = dir_output_song / DIR_NAME_PIANO
     dir_output_song_piano.mkdir(exist_ok=True)
     for i, piano in enumerate((dir_song / DIR_NAME_PIANO).glob("*.wav"), 1):
-        y_piano, _ = librosa.load(str(piano), sr=sr)
-        y_piano_synced = sync_audio(y_piano, y_orig, sr)
-        sf.write(str(dir_output_song_piano / piano.name), y_piano_synced, sr)
+        piano_new = dir_output_song_piano / piano.name
+        if overwrite or (not piano_new.exists()):
+            if not flag_load_orig:
+                y_orig, sr = librosa.load(str(orig), sr=sr)
+                flag_load_orig = True
+            y_piano, _ = librosa.load(str(piano), sr=sr)
+            y_piano_synced = sync_audio(y_piano, y_orig, sr)
+            sf.write(str(piano_new), y_piano_synced, sr)
 
     running_time = time.strftime("%Mm%Ss", time.gmtime(time.time() - start_time))
     print(f"Synced ({i} pianos) '{dir_song.name}' in {running_time}.")
@@ -174,6 +182,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--path_dataset", type=str, default="../dataset/", help="Path to the datasets directory. Defaults to '../datasets/'.")
     parser.add_argument("-n", "--n_processes", type=int, default=1, help="Number of processes to use. Defaults to 1.")
     parser.add_argument("--sr", type=int, default=22050, help="Sample rate of the audio files. Defaults to 22050.")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing song directories.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)
