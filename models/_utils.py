@@ -14,8 +14,7 @@ with open("models/config.json", "r") as f:
 def load_model(
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
-    path_encoder: str | None = None,
-    path_decoder: str | None = None,
+    model_path: str | None = None,
 ) -> Spec2MIDI:
     """
     Load the model according to models/config.json.
@@ -37,10 +36,9 @@ def load_model(
         Spec2MIDI: Model.
     """
     if amt:
-        path_decoder = path_decoder or CONFIG["default"]["decoder_amt"]
+        model_path = model_path or CONFIG["default"]["amt"]
     else:
-        path_decoder = path_decoder or CONFIG["default"]["decoder_pc"]
-    path_encoder = path_encoder or CONFIG["default"]["encoder"]
+        model_path = model_path or CONFIG["default"]["pc"]
 
     encoder = Encoder(
         n_margin=CONFIG["data"]["input"]["margin_b"],
@@ -67,11 +65,9 @@ def load_model(
         dropout=CONFIG["model"]["training"]["dropout"],
         device=device,
     )
-    encoder.load_state_dict(torch.load(path_encoder))
-    decoder.load_state_dict(torch.load(path_decoder))
-    encoder.to(device)
-    decoder.to(device)
     model = Spec2MIDI(encoder, decoder)
+    model.load_state_dict(torch.load(model_path))
+    model.to(device)
     model.encoder = encoder # alias
     model.decoder = decoder # alias
     return model

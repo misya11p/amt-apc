@@ -13,8 +13,7 @@ class Pipeline(AMT):
         self,
         device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         amt: bool = False,
-        encoder_path: str | None = None,
-        decoder_path: str | None = None,
+        model_path: str | None = None,
         skip_load_model: bool = False,
     ):
         """
@@ -44,8 +43,7 @@ class Pipeline(AMT):
             self.model = load_model(
                 device=self.device,
                 amt=amt,
-                encoder_path=encoder_path,
-                decoder_path=decoder_path,
+                model_path=model_path,
             )
         self.config = CONFIG["data"]
 
