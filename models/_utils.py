@@ -68,6 +68,4 @@ def load_model(
     model = Spec2MIDI(encoder, decoder)
     model.load_state_dict(torch.load(model_path))
     model.to(device)
-    model.encoder = encoder # alias
-    model.decoder = decoder # alias
     return model
