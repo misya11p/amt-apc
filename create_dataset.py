@@ -58,7 +58,7 @@ def _save_feature(dir_song: str, dir_output: str, overwrite: bool = False):
     features = torch.stack(features)
 
     torch.save(features, file_output)
-    print(f"Saved '{file_output}' .")
+    print(f"Saved '{file_output}'")
 
 
 if __name__ == "__main__":
