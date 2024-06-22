@@ -6,9 +6,9 @@ import torch
 
 AMT_URL = "https://github.com/sony/hFT-Transformer/releases/download/ismir2023/checkpoint.zip"
 DEFAULT_NAMES = {
-    "amt_encoder": "models/params/amt_encoder.pth",
-    "pc_encoder": "models/params/pc_encoder.pth",
-    "decoder": "models/params/decoder.pth",
+    "encoder": "models/params/encoder.pth",
+    "decoder_amt": "models/params/decoder_amt.pth",
+    "decoder_pc": "models/params/decode_pc.pth",
 }
 
 def main():
@@ -59,8 +59,8 @@ def save_amt():
     with open(AMT_PATH, "rb") as f:
         model = CustomUnpickler(f).load()
     model.to("cpu")
-    torch.save(model.encoder_spec2midi.state_dict(), DEFAULT_NAMES["amt_encoder"])
-    torch.save(model.decoder_spec2midi.state_dict(), DEFAULT_NAMES["decoder"])
+    torch.save(model.encoder_spec2midi.state_dict(), DEFAULT_NAMES["encoder"])
+    torch.save(model.decoder_spec2midi.state_dict(), DEFAULT_NAMES["decoder_amt"])
 
 
 if __name__ == "__main__":
