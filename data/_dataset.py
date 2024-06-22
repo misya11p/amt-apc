@@ -60,11 +60,9 @@ class SyncedPianos:
 
     def __getitem__(self, idx):
         dataset = SyncedPianoDataset(self.data[idx], self.n_frames)
-        if len(dataset):
-            dataloader = DataLoader(
-                dataset,
-                batch_size=self.batch_size,
-                shuffle=True,
-            )
-            return dataloader
-        return None
+        dataloader = DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+        )
+        return dataloader
