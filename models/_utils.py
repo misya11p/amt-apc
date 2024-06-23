@@ -1,4 +1,5 @@
 import json
+from collections import OrderedDict
 import torch
 from .hFT_Transformer.model_spec2midi import (
     Model_SPEC2MIDI as Spec2MIDI,
@@ -69,3 +70,18 @@ def load_model(
     model.load_state_dict(torch.load(model_path))
     model.to(device)
     return model
+
+
+def save_model(model: torch.nn.Module, path: str):
+    """
+    Save the model.
+
+    Args:
+        model (torch.nn.Module): Model to save.
+        path (str): Path to save the model.
+    """
+    state_dict = model.state_dict()
+    correct_state_dict = OrderedDict()
+    for key, value in state_dict.items():
+        correct_state_dict[key.replace("_orig_mod.", "")] = value
+    torch.save(correct_state_dict, path)
