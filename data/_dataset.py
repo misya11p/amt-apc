@@ -9,6 +9,8 @@ from ._utils import preprocess_feature
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
+with open("dataset/stylevec.json", "r") as f:
+    STYLEVECS = json.load(f)
 
 
 class SyncedPianoDataset(Dataset):
@@ -17,16 +19,18 @@ class SyncedPianoDataset(Dataset):
         spec = torch.load(path_spec)
         spec_orig = spec[0]
         spec_pianos = spec[1:]
+        stylevecs = STYLEVECS[path_spec.stem]
 
         spec_orig = preprocess_feature(spec_orig)
         spec_orig_split = self._split(spec_orig)
 
         data = []
-        for spec_piano in spec_pianos:
+        for spec_piano, stylevec in zip(spec_pianos, stylevecs):
+            stylevec = torch.tensor(stylevec)
             spec_piano = preprocess_feature(spec_piano)
             spec_piano_split = self._split(spec_piano)
             for spec_orig, spec_piano in zip(spec_orig_split, spec_piano_split):
-                data.append((spec_orig, spec_piano))
+                data.append((spec_orig, spec_piano, stylevec))
             data = data[:-1]
         self.data = data
 

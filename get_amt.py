@@ -2,6 +2,7 @@ import json
 import subprocess
 import pickle
 import torch
+from models import Spec2MIDI
 
 
 AMT_URL = "https://github.com/sony/hFT-Transformer/releases/download/ismir2023/checkpoint.zip"
@@ -9,6 +10,7 @@ DEFAULT_NAMES = {
     "amt": "models/params/amt.pth",
     "pc": "models/params/pc.pth",
 }
+Z_DIM = 32
 
 def main():
     print("Downloading AMT model.")
@@ -39,7 +41,8 @@ def set_config():
     config = {
         "data": config_data,
         "model": config_model,
-        "default": DEFAULT_NAMES
+        "default": DEFAULT_NAMES,
+        "z_dim": Z_DIM,
     }
 
     with open(CONFIG_PATH, "w") as f:
@@ -56,8 +59,12 @@ class CustomUnpickler(pickle.Unpickler):
 AMT_PATH = "checkpoint/MAESTRO-V3/model_016_003.pkl"
 def save_amt():
     with open(AMT_PATH, "rb") as f:
-        model = CustomUnpickler(f).load()
-    model.to("cpu")
+        basemodel = CustomUnpickler(f).load()
+    basemodel.to("cpu")
+    model = Spec2MIDI(
+        basemodel.encoder_spec2midi,
+        basemodel.decoder_spec2midi,
+    )
     torch.save(model.state_dict(), DEFAULT_NAMES["amt"])
 
 
