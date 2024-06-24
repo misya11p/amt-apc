@@ -23,7 +23,7 @@ class Pipeline(AMT):
         self,
         device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         amt: bool = False,
-        model_path: str | None = None,
+        path_model: str | None = None,
         skip_load_model: bool = False,
     ):
         """
@@ -37,12 +37,8 @@ class Pipeline(AMT):
             amt (bool, optional):
                 Whether to use the AMT model.
                 Defaults to False (use the cover model).
-            encoder_path (str, optional):
-                Path to the encoder model.
-                Defaults to None (use the default path).
-            decoder_path (str, optional):
-                Path to the decoder model.
-                Defaults to None (use the default path).
+            path_model (str, optional):
+                Path to the model. Defaults to None.
             skip_load_model (bool, optional):
                 Whether to skip loading the model. Defaults to False.
         """
@@ -53,7 +49,7 @@ class Pipeline(AMT):
             self.model = load_model(
                 device=self.device,
                 amt=amt,
-                model_path=model_path,
+                path_model=path_model,
             )
         self.config = CONFIG["data"]
 
@@ -116,7 +112,7 @@ class Spec2MIDI(BaseSpec2MIDI):
 def load_model(
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
-    model_path: str | None = None,
+    path_model: str | None = None,
     no_load: bool = False,
 ) -> Spec2MIDI:
     """
@@ -129,19 +125,17 @@ def load_model(
         amt (bool, optional):
             Whether to use the AMT model.
             Defaults to False (use the cover model).
-        path_encoder (str, optional):
-            Path to the encoder model.
-            Defaults to None (use the default path).
-        path_decoder (str, optional):
-            Path to the decoder model.
-            Defaults to None (use the default path).
+        path_model (str, optional):
+            Path to the model. Defaults to None.
+        no_load (bool, optional):
+            Whether to skip loading the model parameters. Defaults to False.
     Returns:
         Spec2MIDI: Model.
     """
     if amt:
-        model_path = model_path or CONFIG["default"]["amt"]
+        path_model = path_model or CONFIG["default"]["amt"]
     else:
-        model_path = model_path or CONFIG["default"]["pc"]
+        path_model = path_model or CONFIG["default"]["pc"]
 
     encoder = Encoder(
         n_margin=CONFIG["data"]["input"]["margin_b"],
@@ -173,17 +167,17 @@ def load_model(
     else:
         model = Spec2MIDI(encoder, decoder, z_dim=Z_DIM)
     if not no_load:
-        model.load_state_dict(torch.load(model_path))
+        model.load_state_dict(torch.load(path_model))
     model.to(device)
     return model
 
 
-def save_model(model: torch.nn.Module, path: str):
+def save_model(model: nn.Module, path: str):
     """
     Save the model.
 
     Args:
-        model (torch.nn.Module): Model to save.
+        model (nn.Module): Model to save.
         path (str): Path to save the model.
     """
     state_dict = model.state_dict()
