@@ -57,16 +57,22 @@ class Pipeline(AMT):
             )
         self.config = CONFIG["data"]
 
-    def wav2midi(self, path_input: str, path_output: str):
+    def wav2midi(
+        self,
+        path_input: str,
+        path_output: str,
+        stylevec: None | torch.Tensor = None,
+    ):
         """
         Convert audio to MIDI.
 
         Args:
             path_input (str): Path to the input audio file.
             path_output (str): Path to the output MIDI file.
+            stylevec (None | torch.Tensor, optional): Style vector.
         """
         feature = self.wav2feature(path_input)
-        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature)
+        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, stylevec)
         note = self.mpe2note(onset, offset, mpe, velocity)
         self.note2midi(note, path_output)
 
@@ -99,10 +105,10 @@ class Spec2MIDI(BaseSpec2MIDI):
         return h
 
     def decode(self, h):
-        onset_f, offset_f, mpe_f, velocity_f, _, \
+        onset_f, offset_f, mpe_f, velocity_f, attention, \
         onset_t, offset_t, mpe_t, velocity_t = self.decoder(h)
         return (
-            onset_f, offset_f, mpe_f, velocity_f,
+            onset_f, offset_f, mpe_f, velocity_f, attention,
             onset_t, offset_t, mpe_t, velocity_t
         )
 
