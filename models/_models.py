@@ -15,7 +15,10 @@ from .hFT_Transformer.model_spec2midi import (
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
-Z_DIM = CONFIG["z_dim"]
+
+with open("dataset/styles.json", "r") as f:
+    STYLES = json.load(f)
+N_STYLES = STYLES["max_id"] + 1
 
 
 class Pipeline(AMT):
@@ -57,7 +60,7 @@ class Pipeline(AMT):
         self,
         path_input: str,
         path_output: str,
-        stylevec: None | torch.Tensor = None,
+        sv: None | torch.Tensor = None,
     ):
         """
         Convert audio to MIDI.
@@ -65,39 +68,42 @@ class Pipeline(AMT):
         Args:
             path_input (str): Path to the input audio file.
             path_output (str): Path to the output MIDI file.
-            stylevec (None | torch.Tensor, optional): Style vector.
+            sv (None | torch.Tensor, optional): Style vector.
         """
         feature = self.wav2feature(path_input)
-        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, stylevec)
+        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
         note = self.mpe2note(onset, offset, mpe, velocity)
         self.note2midi(note, path_output)
 
 
 class Spec2MIDI(BaseSpec2MIDI):
-    def __init__(self, encoder, decoder, z_dim=None):
+    def __init__(self, encoder, decoder, n_styles=0):
         super().__init__(encoder, decoder)
         self.encoder = encoder
         self.decoder = decoder
         delattr(self, "encoder_spec2midi")
         delattr(self, "decoder_spec2midi")
-        self.with_z = bool(z_dim)
-        if z_dim:
+        self.n_styles = n_styles
+        if n_styles:
             hidden_size = encoder.hid_dim
-            self.fc_z = nn.Linear(hidden_size + z_dim, hidden_size)
+            self.embed_style = nn.Embedding(n_styles, hidden_size)
 
-    def forward(self, x, z=None):
-        h = self.encode(x, z) # (batch_size, n_frames, hidden_size)
+    def forward(self, x, sv: None | torch.Tensor = None):
+        h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
         y = self.decode(h)
         return y
 
-    def encode(self, x, z=None):
+    def encode(self, x, sv=None):
         h = self.encoder(x)
-        if self.with_z:
+        if sv is not None:
+            if sv.dim() == 1:
+                sv = self.embed_style(sv.to(h.device))
             _, n_frames, n_bin, _ = h.shape
-            z = z.unsqueeze(1).unsqueeze(2)
-            z = z.repeat(1, n_frames, n_bin, 1)
-            h = torch.cat([h, z], dim=-1) # (batch_size, n_frames, hidden_size + z_dim)
-            h = self.fc_z(h) # (batch_size, n_frames, hidden_size)
+            sv = sv.unsqueeze(1).unsqueeze(2)
+            sv = sv.repeat(1, n_frames, n_bin, 1)
+            sv = sv.to(h.device)
+
+            h = h + sv
         return h
 
     def decode(self, h):
@@ -112,6 +118,7 @@ class Spec2MIDI(BaseSpec2MIDI):
 def load_model(
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
+    with_sv: bool = True,
     path_model: str | None = None,
     no_load: bool = False,
 ) -> Spec2MIDI:
@@ -162,12 +169,10 @@ def load_model(
         dropout=CONFIG["model"]["training"]["dropout"],
         device=device,
     )
-    if amt:
-        model = Spec2MIDI(encoder, decoder)
-    else:
-        model = Spec2MIDI(encoder, decoder, z_dim=Z_DIM)
+    n_styles = N_STYLES if with_sv else 0
+    model = Spec2MIDI(encoder, decoder, n_styles=n_styles)
     if not no_load:
-        model.load_state_dict(torch.load(path_model))
+        model.load_state_dict(torch.load(path_model), strict=False)
     model.to(device)
     return model
 
