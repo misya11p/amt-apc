@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 import json
 import multiprocessing
+from typing import List
 
 import torch
 
@@ -10,11 +11,10 @@ from data import wav2feature
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
-
-
 DIR_NAME_SYNCED = "audio-synced/"
 DIR_NAME_SPEC = "spec/"
 DIR_NAME_PIANO = "piano/"
+PATH_STYLES = "dataset/styles.json"
 
 
 def main(args):
@@ -42,6 +42,7 @@ def _save_feature(dir_song: str, dir_output: str, overwrite: bool = False):
     """
     file_output = (dir_output / dir_song.name).with_suffix(".pth")
     if (not overwrite) and file_output.exists():
+        print(f"'{file_output}' already exists, skipping.")
         return
 
     features = []
@@ -49,8 +50,9 @@ def _save_feature(dir_song: str, dir_output: str, overwrite: bool = False):
     feature_orig = wav2feature(str(orig))
     features.append(feature_orig)
 
-    for piano in (dir_song / DIR_NAME_PIANO).glob("*.wav"):
-        feature = wav2feature(str(piano))
+    covers = list((dir_song / DIR_NAME_PIANO).glob("*.wav"))
+    for cover in covers:
+        feature = wav2feature(str(cover))
         features.append(feature)
 
     min_len = len(min(features, key=len))
@@ -58,7 +60,22 @@ def _save_feature(dir_song: str, dir_output: str, overwrite: bool = False):
     features = torch.stack(features)
 
     torch.save(features, file_output)
+    _assign_styleid(covers)
     print(f"Saved '{file_output}'")
+
+
+def _assign_styleid(covers: List[Path]):
+    with open(PATH_STYLES, "r") as f:
+        styles = json.load(f)
+
+    max_id = max(styles.values(), default=-1)
+    for i, cover in enumerate(covers):
+        if not cover.stem in styles:
+            cover_id = max_id + i + 1
+            styles[cover.stem] = cover_id
+
+    with open(PATH_STYLES, "w") as f:
+        json.dump(styles, f, indent=4)
 
 
 if __name__ == "__main__":
