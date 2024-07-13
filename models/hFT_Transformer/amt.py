@@ -63,7 +63,7 @@ class AMT():
         return a_feature
 
 
-    def transcript(self, a_feature, stylevec=None, mode='combination', ablation_flag=False): # Modified from the original (this line)
+    def transcript(self, a_feature, sv=None, mode='combination', ablation_flag=False): # Modified from the original (this line)
         # a_feature: [num_frame, n_mels]
         a_feature = np.array(a_feature, dtype=np.float32)
 
@@ -91,9 +91,9 @@ class AMT():
             with torch.no_grad():
                 if mode == 'combination':
                     if ablation_flag is True:
-                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, stylevec) # Modified from the original (this line)
+                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, sv) # Modified from the original (this line)
                     else:
-                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, attention, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, stylevec) # Modified from the original (this line)
+                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, attention, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, sv) # Modified from the original (this line)
                     # output_onset: [batch_size, n_frame, n_note]
                     # output_offset: [batch_size, n_frame, n_note]
                     # output_mpe: [batch_size, n_frame, n_note]

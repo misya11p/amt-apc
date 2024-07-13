@@ -26,6 +26,7 @@ class Pipeline(AMT):
         self,
         device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         amt: bool = False,
+        with_sv: bool = True,
         path_model: str | None = None,
         skip_load_model: bool = False,
     ):
@@ -52,6 +53,7 @@ class Pipeline(AMT):
             self.model = load_model(
                 device=self.device,
                 amt=amt,
+                with_sv=with_sv,
                 path_model=path_model,
             )
         self.config = CONFIG["data"]
@@ -87,6 +89,7 @@ class Spec2MIDI(BaseSpec2MIDI):
         if n_styles:
             hidden_size = encoder.hid_dim
             self.embed_style = nn.Embedding(n_styles, hidden_size)
+            self.embed_style.weight.data.normal_(0, 0.01)
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
@@ -101,8 +104,6 @@ class Spec2MIDI(BaseSpec2MIDI):
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
-            sv = sv.to(h.device)
-
             h = h + sv
         return h
 
