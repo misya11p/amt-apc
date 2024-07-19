@@ -63,6 +63,9 @@ class Pipeline(AMT):
         path_input: str,
         path_output: str,
         sv: None | torch.Tensor = None,
+        thred_onset: float = 0.5,
+        thred_offset: float = 0.5,
+        thred_mpe: float = 0.5,
     ):
         """
         Convert audio to MIDI.
@@ -74,7 +77,15 @@ class Pipeline(AMT):
         """
         feature = self.wav2feature(path_input)
         _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
-        note = self.mpe2note(onset, offset, mpe, velocity)
+        note = self.mpe2note(
+            onset,
+            offset,
+            mpe,
+            velocity,
+            thred_onset=thred_onset,
+            thred_offset=thred_offset,
+            thred_mpe=thred_mpe,
+        )
         self.note2midi(note, path_output)
 
 
@@ -89,7 +100,7 @@ class Spec2MIDI(BaseSpec2MIDI):
         if n_styles:
             hidden_size = encoder.hid_dim
             self.embed_style = nn.Embedding(n_styles, hidden_size)
-            self.embed_style.weight.data.normal_(0, 0.01)
+            self.fc_style = nn.Linear(hidden_size, hidden_size)
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
@@ -101,6 +112,7 @@ class Spec2MIDI(BaseSpec2MIDI):
         if sv is not None:
             if sv.dim() == 1:
                 sv = self.embed_style(sv.to(h.device))
+                sv = self.fc_style(sv)
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
