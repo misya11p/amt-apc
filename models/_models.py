@@ -62,7 +62,7 @@ class Pipeline(AMT):
         self,
         path_input: str,
         path_output: str,
-        sv: None | torch.Tensor = None,
+        sv: None | torch.Tensor | int = None,
         thred_onset: float = 0.5,
         thred_offset: float = 0.5,
         thred_mpe: float = 0.5,
@@ -75,6 +75,8 @@ class Pipeline(AMT):
             path_output (str): Path to the output MIDI file.
             sv (None | torch.Tensor, optional): Style vector.
         """
+        if isinstance(sv, int):
+            sv = torch.tensor([sv], device=self.device)
         feature = self.wav2feature(path_input)
         _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
         note = self.mpe2note(
@@ -97,10 +99,11 @@ class Spec2MIDI(BaseSpec2MIDI):
         delattr(self, "encoder_spec2midi")
         delattr(self, "decoder_spec2midi")
         self.n_styles = n_styles
-        if n_styles:
-            hidden_size = encoder.hid_dim
-            self.embed_style = nn.Embedding(n_styles, hidden_size)
-            self.fc_style = nn.Linear(hidden_size, hidden_size)
+        # if n_styles:
+        #     hidden_size = encoder.hid_dim
+            # self.embed_style = nn.Embedding(n_styles, hidden_size)
+            # self.fc_style = nn.Linear(hidden_size, hidden_size)
+            # self.fc_cat = nn.Linear(hidden_size * 2, hidden_size)
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
@@ -109,14 +112,16 @@ class Spec2MIDI(BaseSpec2MIDI):
 
     def encode(self, x, sv=None):
         h = self.encoder(x)
-        if sv is not None:
-            if sv.dim() == 1:
-                sv = self.embed_style(sv.to(h.device))
-                sv = self.fc_style(sv)
-            _, n_frames, n_bin, _ = h.shape
-            sv = sv.unsqueeze(1).unsqueeze(2)
-            sv = sv.repeat(1, n_frames, n_bin, 1)
-            h = h + sv
+        # if sv is not None:
+        #     if sv.dim() == 1:
+        #         sv = self.embed_style(sv.to(h.device))
+        #         sv = self.fc_style(sv)
+        #     _, n_frames, n_bin, _ = h.shape
+        #     sv = sv.unsqueeze(1).unsqueeze(2)
+        #     sv = sv.repeat(1, n_frames, n_bin, 1)
+        #     h_sv = torch.cat([h, sv], dim=-1)
+        #     z = self.fc_cat(h_sv)
+        #     h = h + z
         return h
 
     def decode(self, h):
