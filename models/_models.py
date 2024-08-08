@@ -190,7 +190,7 @@ def load_model(
     n_styles = N_STYLES if with_sv else 0
     model = Spec2MIDI(encoder, decoder, n_styles=n_styles)
     if not no_load:
-        model.load_state_dict(torch.load(path_model), strict=False)
+        model.load_state_dict(torch.load(path_model))
     model.to(device)
     return model
 
