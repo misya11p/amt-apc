@@ -112,8 +112,8 @@ import librosa
 import soundfile as sf
 
 
-DIR_NAME_EXTRACTED = "audio-extracted/"
-DIR_NAME_SYNCED = "audio-synced/"
+DIR_NAME_EXTRACTED = "extracted/"
+DIR_NAME_SYNCED = "synced/"
 DIR_NAME_PIANO = "piano/"
 
 
