@@ -9,8 +9,6 @@ from ._utils import preprocess_feature
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
-with open("dataset/styles.json", "r") as f:
-    STYLES = json.load(f)["songs"]
 
 
 class SyncedPianoDataset(Dataset):
@@ -24,12 +22,11 @@ class SyncedPianoDataset(Dataset):
         spec_orig_split = self._split(spec_orig)
 
         data = []
-        styleids = STYLES[path_spec.stem]
-        for spec_piano, styleid in zip(spec_pianos, styleids):
+        for spec_piano in spec_pianos:
             spec_piano = preprocess_feature(spec_piano)
             spec_piano_split = self._split(spec_piano)
             for spec_orig, spec_piano in zip(spec_orig_split, spec_piano_split):
-                data.append((spec_orig, spec_piano, styleid))
+                data.append((spec_orig, spec_piano))
             data = data[:-1]
         self.data = data
 
