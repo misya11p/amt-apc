@@ -1,73 +1,110 @@
 import argparse
 from pathlib import Path
 import json
-import multiprocessing
+import functools
 
-import torch
+import numpy as np
 
-from data import wav2feature
 
+print = functools.partial(print, flush=True)
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
-DIR_NAME_SYNCED = "synced/"
-DIR_NAME_SPEC = "spec/"
+DIR_NAME_ARRAY = "array/"
+DIR_NAME_DATA = "data/"
 DIR_NAME_PIANO = "piano/"
-PATH_STYLES = "dataset/styles.json"
+DIR_NAME_SPEC = "spec/"
+DIR_NAME_LABEL = "label/"
+with open("models/config.json", "r") as f:
+    CONFIG = json.load(f)["data"]
+N_FRAMES = CONFIG["input"]["num_frame"]
+MARGIN_B = CONFIG["input"]["margin_b"]
+MARGIN_F = CONFIG["input"]["margin_f"]
 
 
 def main(args):
     dir_dataset = Path(args.path_dataset)
-    dir_input = dir_dataset / DIR_NAME_SYNCED
-    dir_output = dir_dataset / DIR_NAME_SPEC
+    dir_input = dir_dataset / DIR_NAME_ARRAY
+    dir_output = dir_dataset / DIR_NAME_DATA
     dir_output.mkdir(exist_ok=True)
+    dir_spec = dir_output / DIR_NAME_SPEC
+    dir_spec.mkdir(exist_ok=True)
+    dir_label = dir_output / DIR_NAME_LABEL
+    dir_label.mkdir(exist_ok=True)
 
-    save_args = []
     songs = list(dir_input.glob("*/"))
     songs = sorted(songs)
-    for song in songs:
-        save_args.append((song, dir_output, args.overwrite))
+    n_songs = len(songs)
+    for ns, song in enumerate(songs, 1):
+        name_song = song.name
+        print(f"{ns}/{n_songs}: {name_song}", end=" ")
+        dir_piano = song / DIR_NAME_PIANO
 
-    with multiprocessing.Pool(args.n_processes) as pool:
-        pool.starmap(_save_feature, save_args)
+        orig, = list(song.glob("*.npy"))
+        spec = np.load(orig)
+        length_song = len(spec)
+        n_seg = len(str((length_song // N_FRAMES) + 1))
+        for ns, i in enumerate(range(0, length_song, N_FRAMES)):
+            spec_block = (spec[i: i + MARGIN_B + N_FRAMES + MARGIN_F]).T
+            sid = str(ns).zfill(n_seg)
+            path = dir_spec / f"{orig.stem}_{sid}"
+            if (not args.overwrite) and Path(path).exists():
+                continue
+            np.save(path, spec_block)
+
+        pianos = list(dir_piano.glob("*.npz"))
+        pianos = sorted(pianos)
+        for piano in pianos:
+            midi = np.load(piano)
+            midi_stack = np.stack((
+                midi["onset"],
+                midi["offset"],
+                midi["mpe"],
+                midi["velocity"],
+            ))
+
+            for ns, i in enumerate(range(0, length_song, N_FRAMES)):
+                sid = str(ns).zfill(n_seg)
+                path = dir_label / f"{piano.stem}_{sid}"
+                if (not args.overwrite) and path.exists():
+                    continue
+
+                midi_block = (midi_stack[:, i: i + N_FRAMES])
+                np.savez(
+                    path,
+                    onset=midi_block[0].T,
+                    offset=midi_block[1].T,
+                    mpe=midi_block[2].T,
+                    velocity=midi_block[3].T,
+                )
+
+            print(".", end="")
+        print(f" Done.")
 
 
-def _save_feature(dir_song: str, dir_output: str, overwrite: bool = False):
-    """
-    Convert the audio files in given song directory to features and save
-    them in a single '.pth' file.
+def save_specs(spec, outfmt, margin, overwrite=False):
+    if margin:
+        margin_b = CONFIG["input"]["margin_b"]
+        margin_f = CONFIG["input"]["margin_f"]
+    else:
+        margin_b = 0
+        margin_f = 0
+    specs = []
+    for i in range(0, len(spec), N_FRAMES):
+        spec_block = (spec[i: i + margin_b + N_FRAMES + margin_f]).T
+        specs.append(spec_block)
 
-    Args:
-        dir_song (str): Path to the song directory.
-        dir_output (str): Path to the output directory.
-    """
-    file_output = (dir_output / dir_song.name).with_suffix(".pth")
-    if (not overwrite) and file_output.exists():
-        print(f"'{file_output}' already exists, skipping.")
-        return
-
-    features = []
-    orig = next(dir_song.glob("*.wav"))
-    feature_orig = wav2feature(str(orig))
-    features.append(feature_orig)
-
-    covers = list((dir_song / DIR_NAME_PIANO).glob("*.wav"))
-    for cover in covers:
-        feature = wav2feature(str(cover))
-        features.append(feature)
-
-    min_len = len(min(features, key=len))
-    features = [feature[:min_len] for feature in features]
-    features = torch.stack(features)
-
-    torch.save(features, file_output)
-    print(f"Saved '{file_output}'")
+    n_digits = len(str(len(specs)))
+    for n, spec in enumerate(specs):
+        path = outfmt % str(n).zfill(n_digits)
+        if (not overwrite) and Path(path).exists():
+            continue
+        torch.save(spec, path)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create train dataset.")
-    parser.add_argument("-d", "--path_dataset", type=str, default="dataset/", help="Path to the datasets directory. Defaults to '../datasets/'.")
-    parser.add_argument("-n", "--n_processes", type=int, default=1, help="Number of processes to use. Defaults to 1.")
+    parser.add_argument("-d", "--path_dataset", type=str, default="dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)
