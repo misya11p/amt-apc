@@ -13,6 +13,7 @@ DIR_NAME_DATA = "data/"
 DIR_NAME_PIANO = "piano/"
 DIR_NAME_SPEC = "spec/"
 DIR_NAME_LABEL = "label/"
+PATH_PIANO2ORIG = "dataset/piano2orig.json"
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
@@ -29,6 +30,7 @@ def main(args):
     dir_spec.mkdir(exist_ok=True)
     dir_label = dir_output / DIR_NAME_LABEL
     dir_label.mkdir(exist_ok=True)
+    piano2orig = {}
 
     songs = list(dir_input.glob("*/"))
     songs = sorted(songs)
@@ -54,6 +56,7 @@ def main(args):
         pianos = list(dir_piano.glob("*.npz"))
         pianos = sorted(pianos)
         for piano in pianos:
+            piano2orig[piano.stem] = orig.stem
             midi = np.load(piano)
             midi_stack = np.stack((
                 midi["onset"],
@@ -79,6 +82,9 @@ def main(args):
 
             print(".", end="")
         print(f" Done.")
+
+    with open(PATH_PIANO2ORIG, "w") as f:
+        json.dump(piano2orig, f, indent=2)
 
 
 if __name__ == "__main__":
