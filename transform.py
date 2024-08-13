@@ -7,12 +7,13 @@ from collections import OrderedDict
 import torch
 
 from models import Pipeline
+from data import preprocess_feature
 
 
 print = functools.partial(print, flush=True)
 
 DIR_NAME_SYNCED = "synced/"
-DIR_NAME_LABEL = "label/"
+DIR_NAME_TENSOR = "tensor/"
 DIR_NAME_PIANO = "piano/"
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,7 +21,7 @@ DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def main(args):
     dir_dataset = Path(args.path_dataset)
     dir_input = dir_dataset / DIR_NAME_SYNCED
-    dir_output = dir_dataset / DIR_NAME_LABEL
+    dir_output = dir_dataset / DIR_NAME_TENSOR
     dir_output.mkdir(exist_ok=True)
 
     songs = list(dir_input.glob("*/"))
@@ -38,33 +39,48 @@ def main(args):
         if (not args.overwrite) and dir_song.exists():
             print("Already exists, skip.")
             continue
-        dir_song.mkdir(exist_ok=True)
 
+        dir_song.mkdir(exist_ok=True)
+        dir_song_piano = dir_song / DIR_NAME_PIANO
+        dir_song_piano.mkdir(exist_ok=True)
+
+        orig, = list(song.glob("*.wav"))
         pianos = sorted(list((song / DIR_NAME_PIANO).glob("*.wav")))
+
+        feature_orig = amt.wav2feature(str(orig))
+        lengths = [len(feature_orig)]
+        features_piano = {}
         for piano in pianos:
-            orig, = list(song.glob("*.wav"))
-            onset, offset, mpe, velocity = transcript(piano, amt)
-            path_save = (dir_song / piano.stem).with_suffix(".pth")
+            feature_piano = amt.wav2feature(str(piano))
+            features_piano[piano] = feature_piano
+            lengths.append(len(feature_piano))
+        min_length = min(lengths)
+
+        feature_orig = preprocess_feature(feature_orig[:min_length])
+        torch.save(feature_orig, (dir_song / orig.name).with_suffix(".pth"))
+
+        for path, feature in features_piano.items():
+            feature = feature[:min_length]
+            onset, offset, mpe, velocity = transcript(feature, amt)
+            path_save = (dir_song_piano / path.stem).with_suffix(".pth")
             state_dict = {
                 "onset": onset,
                 "offset": offset,
                 "mpe": mpe,
                 "velocity": velocity,
-                "info": {
-                    "path_original": str(orig),
-                }
             }
             torch.save(OrderedDict(state_dict), path_save)
             print(".", end="")
+
         print(f" Done ({time.time()-time_start:.2f}s)")
 
 
-def transcript(path_input, amt):
-    feature = amt.wav2feature(str(path_input))
+def transcript(feature, amt):
     _, _, _, _, onset, offset, mpe, velocity = amt.transcript(feature)
     onset = (torch.from_numpy(onset) > 0.5).byte()
     offset = (torch.from_numpy(offset) > 0.5).byte()
     mpe = (torch.from_numpy(mpe) > 0.5).byte()
+    velocity = torch.from_numpy(velocity).byte()
     return onset, offset, mpe, velocity
 
 
