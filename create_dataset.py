@@ -8,13 +8,12 @@ import numpy as np
 
 print = functools.partial(print, flush=True)
 
-with open("models/config.json", "r") as f:
-    CONFIG = json.load(f)
 DIR_NAME_ARRAY = "array/"
 DIR_NAME_DATA = "data/"
 DIR_NAME_PIANO = "piano/"
 DIR_NAME_SPEC = "spec/"
 DIR_NAME_LABEL = "label/"
+
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
 N_FRAMES = CONFIG["input"]["num_frame"]
