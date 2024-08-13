@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 import time
 import functools
-from collections import OrderedDict
 
 import torch
 import numpy as np
