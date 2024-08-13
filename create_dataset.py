@@ -18,8 +18,7 @@ DIR_NAME_LABEL = "label/"
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
 N_FRAMES = CONFIG["input"]["num_frame"]
-MARGIN_B = CONFIG["input"]["margin_b"]
-MARGIN_F = CONFIG["input"]["margin_f"]
+MARGIN = CONFIG["input"]["margin_b"] + CONFIG["input"]["margin_f"]
 
 
 def main(args):
@@ -42,11 +41,12 @@ def main(args):
 
         orig, = list(song.glob("*.npy"))
         spec = np.load(orig)
-        length_song = len(spec)
-        n_seg = len(str((length_song // N_FRAMES) + 1))
-        for ns, i in enumerate(range(0, length_song, N_FRAMES)):
-            spec_block = (spec[i: i + MARGIN_B + N_FRAMES + MARGIN_F]).T
-            sid = str(ns).zfill(n_seg)
+        length_song = len(spec) - MARGIN
+        idxs = range(0, length_song, N_FRAMES)
+        n_dig = len(str(len(idxs)))
+        for ns, i in enumerate(idxs):
+            spec_block = (spec[i:i + N_FRAMES + MARGIN]).T
+            sid = str(ns).zfill(n_dig)
             path = dir_spec / f"{orig.stem}_{sid}"
             if (not args.overwrite) and Path(path).exists():
                 continue
@@ -64,12 +64,12 @@ def main(args):
             ))
 
             for ns, i in enumerate(range(0, length_song, N_FRAMES)):
-                sid = str(ns).zfill(n_seg)
+                sid = str(ns).zfill(n_dig)
                 path = dir_label / f"{piano.stem}_{sid}"
                 if (not args.overwrite) and path.exists():
                     continue
 
-                midi_block = (midi_stack[:, i: i + N_FRAMES])
+                midi_block = (midi_stack[:, i:i + N_FRAMES])
                 np.savez(
                     path,
                     onset=midi_block[0].T,
@@ -80,26 +80,6 @@ def main(args):
 
             print(".", end="")
         print(f" Done.")
-
-
-def save_specs(spec, outfmt, margin, overwrite=False):
-    if margin:
-        margin_b = CONFIG["input"]["margin_b"]
-        margin_f = CONFIG["input"]["margin_f"]
-    else:
-        margin_b = 0
-        margin_f = 0
-    specs = []
-    for i in range(0, len(spec), N_FRAMES):
-        spec_block = (spec[i: i + margin_b + N_FRAMES + margin_f]).T
-        specs.append(spec_block)
-
-    n_digits = len(str(len(specs)))
-    for n, spec in enumerate(specs):
-        path = outfmt % str(n).zfill(n_digits)
-        if (not overwrite) and Path(path).exists():
-            continue
-        torch.save(spec, path)
 
 
 if __name__ == "__main__":
