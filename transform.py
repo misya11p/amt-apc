@@ -58,7 +58,7 @@ def main(args):
         min_length = min(lengths)
 
         feature_orig = preprocess_feature(feature_orig[:min_length])
-        path_save = dir_song / orig.name
+        path_save = dir_song / orig.stem
         np.save(path_save, feature_orig.numpy())
 
         for path, feature in features_piano.items():
