@@ -13,7 +13,7 @@ from data import preprocess_feature
 print = functools.partial(print, flush=True)
 
 DIR_NAME_SYNCED = "synced/"
-DIR_NAME_TENSOR = "tensor/"
+DIR_NAME_ARRAY = "array/"
 DIR_NAME_PIANO = "piano/"
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,7 +21,7 @@ DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def main(args):
     dir_dataset = Path(args.path_dataset)
     dir_input = dir_dataset / DIR_NAME_SYNCED
-    dir_output = dir_dataset / DIR_NAME_TENSOR
+    dir_output = dir_dataset / DIR_NAME_ARRAY
     dir_output.mkdir(exist_ok=True)
 
     songs = list(dir_input.glob("*/"))
@@ -66,10 +66,10 @@ def main(args):
             path_save = dir_song_piano / path.stem
             np.savez(
                 path_save,
-                onset=onset.numpy(),
-                offset=offset.numpy(),
-                mpe=mpe.numpy(),
-                velocity=velocity.numpy(),
+                onset=onset,
+                offset=offset,
+                mpe=mpe,
+                velocity=velocity,
             )
             print(".", end="")
 
@@ -78,10 +78,10 @@ def main(args):
 
 def transcript(feature, amt):
     _, _, _, _, onset, offset, mpe, velocity = amt.transcript(feature)
-    onset = (torch.from_numpy(onset) > 0.5).byte()
-    offset = (torch.from_numpy(offset) > 0.5).byte()
-    mpe = (torch.from_numpy(mpe) > 0.5).byte()
-    velocity = torch.from_numpy(velocity).byte()
+    onset = (onset > 0.5).astype(np.uint8)
+    offset = (offset > 0.5).astype(np.uint8)
+    mpe = (mpe > 0.5).astype(np.uint8)
+    velocity = velocity.astype(np.uint8)
     return onset, offset, mpe, velocity
 
 
