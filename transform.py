@@ -5,6 +5,7 @@ import functools
 from collections import OrderedDict
 
 import torch
+import numpy as np
 
 from models import Pipeline
 from data import preprocess_feature
@@ -57,19 +58,20 @@ def main(args):
         min_length = min(lengths)
 
         feature_orig = preprocess_feature(feature_orig[:min_length])
-        torch.save(feature_orig, (dir_song / orig.name).with_suffix(".pth"))
+        path_save = dir_song / orig.name
+        np.save(path_save, feature_orig.numpy())
 
         for path, feature in features_piano.items():
             feature = feature[:min_length]
             onset, offset, mpe, velocity = transcript(feature, amt)
-            path_save = (dir_song_piano / path.stem).with_suffix(".pth")
-            state_dict = {
-                "onset": onset,
-                "offset": offset,
-                "mpe": mpe,
-                "velocity": velocity,
-            }
-            torch.save(OrderedDict(state_dict), path_save)
+            path_save = dir_song_piano / path.stem
+            np.savez(
+                path_save,
+                onset=onset.numpy(),
+                offset=offset.numpy(),
+                mpe=mpe.numpy(),
+                velocity=velocity.numpy(),
+            )
             print(".", end="")
 
         print(f" Done ({time.time()-time_start:.2f}s)")
