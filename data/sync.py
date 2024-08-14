@@ -107,7 +107,6 @@ import multiprocessing
 import warnings
 import time
 
-
 import librosa
 import soundfile as sf
 
@@ -179,7 +178,7 @@ def _sync_song(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Synchronize piano audio with original audio.")
-    parser.add_argument("-d", "--path_dataset", type=str, default="../dataset/", help="Path to the datasets directory. Defaults to '../datasets/'.")
+    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
     parser.add_argument("-n", "--n_processes", type=int, default=1, help="Number of processes to use. Defaults to 1.")
     parser.add_argument("--sr", type=int, default=22050, help="Sample rate of the audio files. Defaults to 22050.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")

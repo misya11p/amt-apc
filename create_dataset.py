@@ -96,7 +96,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create train dataset.")
-    parser.add_argument("-d", "--path_dataset", type=str, default="dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
+    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     parser.add_argument("--rm_ends", type=int, default=2, help="Remove n segments from the beginning and the end of the song. Defaults to 2.")
     args = parser.parse_args()
