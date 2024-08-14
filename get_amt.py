@@ -33,7 +33,7 @@ CONFIG_PATH = "models/config.json"
 def set_config():
     with open(DATA_CONFIG_PATH, "r") as f:
         config_data = json.load(f)
-    config_data["input"]["min_value"] = 0
+    config_data["input"]["min_value"] = -18.0
 
     with open(MODEL_CONFIG_PATH, "r") as f:
         config_model = json.load(f)
