@@ -13,7 +13,7 @@ DIR_NAME_DATA = "data/"
 DIR_NAME_PIANO = "piano/"
 DIR_NAME_SPEC = "spec/"
 DIR_NAME_LABEL = "label/"
-PATH_PIANO2ORIG = "dataset/piano2orig.json"
+PATH_PIANO2ORIG = "data/piano2orig.json"
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
