@@ -19,7 +19,7 @@ N_VELOCITY = CONFIG["midi"]["num_velocity"]
 SR = CONFIG["feature"]["sr"]
 HOP_LENGTH = CONFIG["feature"]["hop_sample"]
 
-PATH_STYLES = "data/styles.json"
+PATH_STYLES = "data/.styles.json"
 PATH_STYLE_VECTOR = "data/style_vector.json"
 
 
