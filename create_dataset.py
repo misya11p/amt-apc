@@ -65,20 +65,27 @@ def main(args):
                 midi["velocity"],
             ))
 
+            kwargs = []
             for ns, i in enumerate(range(0, length_song, N_FRAMES)):
+                midi_block = (midi_stack[:, i:i + N_FRAMES])
                 sid = str(ns).zfill(n_dig)
                 path = dir_label / f"{piano.stem}_{sid}"
                 if (not args.overwrite) and path.exists():
                     continue
 
-                midi_block = (midi_stack[:, i:i + N_FRAMES])
-                np.savez(
-                    path,
-                    onset=midi_block[0].T,
-                    offset=midi_block[1].T,
-                    mpe=midi_block[2].T,
-                    velocity=midi_block[3].T,
-                )
+                kwargs.append({
+                    "path": path,
+                    "data": {
+                        "onset": midi_block[0].T,
+                        "offset": midi_block[1].T,
+                        "mpe": midi_block[2].T,
+                        "velocity": midi_block[3].T,
+                    }
+                })
+            if ne := args.rm_ends:
+                kwargs = kwargs[ne:-ne]
+            for kw in kwargs:
+                np.savez(kw["path"], **kw["data"])
 
             print(".", end="")
         print(f" Done.")
@@ -91,5 +98,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create train dataset.")
     parser.add_argument("-d", "--path_dataset", type=str, default="dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--rm_ends", type=int, default=2, help="Remove n segments from the beginning and the end of the song. Defaults to 2.")
     args = parser.parse_args()
     main(args)
