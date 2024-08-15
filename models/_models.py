@@ -43,14 +43,15 @@ class Pipeline(AMT):
                 Whether to skip loading the model. Defaults to False.
         """
         self.device = device
+        self.sv_dim = sv_dim
         if skip_load_model:
             self.model = None
         else:
             self.model = load_model(
                 device=self.device,
                 amt=amt,
-                sv_dim=sv_dim,
                 path_model=path_model,
+                sv_dim=sv_dim,
             )
         self.config = CONFIG["data"]
 
@@ -94,10 +95,17 @@ class Spec2MIDI(BaseSpec2MIDI):
         delattr(self, "decoder_spec2midi")
         self.sv_dim = sv_dim
         if sv_dim:
-            pass
+            hidden_size = encoder.hid_dim
+            self.fc_sv = nn.Linear(sv_dim, hidden_size)
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
+        if sv is not None:
+            sv = self.fc_sv(sv) # (batch_size, hidden_size)
+            _, n_frames, n_bin, _ = h.shape
+            sv = sv.unsqueeze(1).unsqueeze(2)
+            sv = sv.repeat(1, n_frames, n_bin, 1)
+            h = h + sv
         y = self.decode(h)
         return y
 
@@ -117,8 +125,8 @@ class Spec2MIDI(BaseSpec2MIDI):
 def load_model(
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     amt: bool = False,
-    sv_dim: int = 0,
     path_model: str | None = None,
+    sv_dim: int = 0,
     no_load: bool = False,
 ) -> Spec2MIDI:
     """
@@ -170,7 +178,7 @@ def load_model(
     )
     model = Spec2MIDI(encoder, decoder, sv_dim=sv_dim)
     if not no_load:
-        model.load_state_dict(torch.load(path_model))
+        model.load_state_dict(torch.load(path_model), strict=False)
     model.to(device)
     return model
 
