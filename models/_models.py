@@ -100,17 +100,17 @@ class Spec2MIDI(BaseSpec2MIDI):
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
+        y = self.decode(h)
+        return y
+
+    def encode(self, x, sv=None):
+        h = self.encoder(x)
         if sv is not None:
             sv = self.fc_sv(sv) # (batch_size, hidden_size)
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
             h = h + sv
-        y = self.decode(h)
-        return y
-
-    def encode(self, x, sv=None):
-        h = self.encoder(x)
         return h
 
     def decode(self, h):
