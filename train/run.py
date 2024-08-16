@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dir_dataset", type=str, default="./dataset/")
     parser.add_argument("--n_gpus", type=int, default=1)
-    parser.add_argument("--n_epochs", type=int, default=10)
+    parser.add_argument("--n_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--no_sv", action="store_true")
