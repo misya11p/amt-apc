@@ -195,5 +195,7 @@ def save_model(model: nn.Module, path: str):
     state_dict = model.state_dict()
     correct_state_dict = OrderedDict()
     for key, value in state_dict.items():
-        correct_state_dict[key.replace("_orig_mod.", "")] = value
+        key = key.replace("_orig_mod.", "").replace("module.", "")
+        correct_state_dict[key] = value
+
     torch.save(correct_state_dict, path)
