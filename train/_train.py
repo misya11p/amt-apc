@@ -53,7 +53,7 @@ def train(
         if prog is not None:
             prog.update([loss.item(), f1])
 
-        if freq_save:
+        if freq_save and (i % freq_save == 0):
             save_model(model, PATH_PC)
             loss, f1 = prog.now_values()
             with open(file_log, "a") as f:
