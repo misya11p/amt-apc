@@ -23,7 +23,8 @@ def main(args):
         dataset=dataset,
         n_gpus=args.n_gpus,
         batch_size=args.batch_size,
-        n_epochs=args.n_epochs
+        n_epochs=args.n_epochs,
+        with_sv=not args.no_sv,
     )
     if args.n_gpus > 1:
         mp.spawn(
@@ -43,5 +44,6 @@ if __name__ == "__main__":
     parser.add_argument("--n_epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--no_sv", action="store_true")
     args = parser.parse_args()
     main(args)

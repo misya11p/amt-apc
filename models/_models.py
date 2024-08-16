@@ -105,7 +105,7 @@ class Spec2MIDI(BaseSpec2MIDI):
 
     def encode(self, x, sv=None):
         h = self.encoder(x)
-        if sv is not None:
+        if self.sv_dim and (sv is not None):
             sv = self.fc_sv(sv) # (batch_size, hidden_size)
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
