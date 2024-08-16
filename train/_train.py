@@ -98,7 +98,7 @@ class Trainer:
             dir_checkpoint = DIR_CHECKPOINTS / date
             dir_checkpoint.mkdir()
             file_log = dir_checkpoint / FILE_NAME_LOG
-            prog = train_progress(width=20)
+            prog = train_progress(width=20, label=["loss", "f1"])
             prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
         else:
             prog = None
