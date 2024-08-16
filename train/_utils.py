@@ -1,3 +1,5 @@
+import json
+
 import torch
 import torch.nn as nn
 from sklearn.metrics import f1_score
@@ -6,6 +8,10 @@ from sklearn.metrics import f1_score
 THRESHOLD = 0.5
 BCE_LOSS = nn.BCELoss()
 CE_LOSS = nn.CrossEntropyLoss()
+with open("models/config.json", "r") as f:
+    CONFIG = json.load(f)
+N_VELOCITY = CONFIG["data"]["midi"]["num_velocity"]
+
 
 def f1_fn(
     onset_pred,
@@ -35,6 +41,9 @@ def loss_fn(pred, label):
 
     onset_label, offset_label, mpe_label, velocity_label = label
 
+    velocity_pred = velocity_pred.reshape(-1, 128)
+    velocity_label = velocity_label.reshape(-1)
+
     with torch.no_grad():
         f1 = f1_fn(
             (onset_pred > THRESHOLD),
@@ -46,13 +55,13 @@ def loss_fn(pred, label):
         )
 
     # select only the incorrect predictions
-    onset_idx = ((onset_pred > THRESHOLD) != onset_label)
-    onset_pred = onset_pred[onset_idx]
-    onset_label = onset_label[onset_idx]
+    # onset_idx = ((onset_pred > THRESHOLD) != onset_label)
+    # onset_pred = onset_pred[onset_idx]
+    # onset_label = onset_label[onset_idx]
 
-    velocity_idx = (velocity_pred.argmax(dim=-1).bool() != velocity_label.bool())
-    velocity_pred = velocity_pred[velocity_idx]
-    velocity_label = velocity_label[velocity_idx]
+    # velocity_idx = (velocity_pred.argmax(dim=-1).bool() != velocity_label.bool())
+    # velocity_pred = velocity_pred[velocity_idx]
+    # velocity_label = velocity_label[velocity_idx]
 
     # calculate loss
     loss_onset = BCE_LOSS(onset_pred, onset_label)
