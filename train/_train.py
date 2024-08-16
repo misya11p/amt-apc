@@ -86,6 +86,7 @@ class Trainer:
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=self.batch_size,
+            sampler=self.sampler,
             shuffle=(self.sampler is None),
         )
 
