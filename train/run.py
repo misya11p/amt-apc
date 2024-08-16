@@ -10,7 +10,6 @@ from _train import Trainer
 from data import PianoCoversDataset
 
 
-
 DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def main(args):
@@ -26,7 +25,7 @@ def main(args):
         n_epochs=args.n_epochs,
         with_sv=not args.no_sv,
     )
-    if args.n_gpus > 1:
+    if args.n_gpus >= 2:
         mp.spawn(
             trainer,
             nprocs=args.n_gpus,
