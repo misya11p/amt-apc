@@ -106,7 +106,8 @@ class Trainer:
             file_log = None
 
         for n in range(self.n_epochs):
-            self.sampler.set_epoch(n)
+            if self.ddp:
+                self.sampler.set_epoch(n)
             train(
                 model=self.model,
                 optimizer=self.optimizer,
