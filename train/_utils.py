@@ -34,6 +34,16 @@ def f1_fn(
     return f1_avg
 
 
+def select(label, thr=0.5, random_prob=0.3):
+    idx = (label > thr)
+    shifted_p = torch.roll(idx, 1, -1)
+    shifted_n = torch.roll(idx, -1, -1)
+    random = torch.rand(idx.shape).to(idx.device)
+    random = random < random_prob
+    idx = idx | shifted_p | shifted_n | random
+    return idx
+
+
 def loss_fn(pred, label):
     # unpack
     onset_f_pred, offset_f_pred, mpe_f_pred, velocity_f_pred, _, \
@@ -62,6 +72,15 @@ def loss_fn(pred, label):
     # velocity_idx = (velocity_pred.argmax(dim=-1).bool() != velocity_label.bool())
     # velocity_pred = velocity_pred[velocity_idx]
     # velocity_label = velocity_label[velocity_idx]
+
+    # select
+    onset_idx = select(onset_label, THRESHOLD)
+    onset_pred = onset_pred[onset_idx]
+    onset_label = onset_label[onset_idx]
+
+    velocity_idx = select(velocity_label, 0, 0)
+    velocity_pred = velocity_pred[velocity_idx]
+    velocity_label = velocity_label[velocity_idx]
 
     # calculate loss
     loss_onset = BCE_LOSS(onset_pred, onset_label)
