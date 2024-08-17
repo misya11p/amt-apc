@@ -78,7 +78,7 @@ def loss_fn(pred, label):
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    velocity_idx = select(velocity_label, 0, 0)
+    velocity_idx = select(velocity_label, 0, 0.1)
     velocity_pred = velocity_pred[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
