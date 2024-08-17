@@ -97,6 +97,12 @@ class Spec2MIDI(BaseSpec2MIDI):
         if sv_dim:
             hidden_size = encoder.hid_dim
             self.fc_sv = nn.Linear(sv_dim, hidden_size)
+            self.gate_sv = nn.Sequential(
+                nn.Linear(hidden_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, hidden_size),
+                nn.Sigmoid(),
+            )
 
     def forward(self, x, sv: None | torch.Tensor = None):
         h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
@@ -110,7 +116,8 @@ class Spec2MIDI(BaseSpec2MIDI):
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
-            h = h + sv
+            z = self.gate_sv(h)
+            h = z * h + (1 - z) * sv
         return h
 
     def decode(self, h):
