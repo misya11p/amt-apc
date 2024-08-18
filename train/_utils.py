@@ -1,5 +1,4 @@
 import json
-import random
 
 import torch
 import torch.nn as nn
@@ -31,14 +30,14 @@ def f1_fn(
     f1_onset = f1_score(onset_label, onset_pred, zero_division=1)
     f1_mpe = f1_score(mpe_label, mpe_pred, zero_division=1)
     f1_velocity = f1_score(velocity_label, velocity_pred, zero_division=1)
-    f1_avg = (f1_onset + f1_mpe + f1_velocity) / 3
-    return f1_avg
+    # f1_avg = (f1_onset + f1_mpe + f1_velocity) / 3
+    return f1_onset, f1_mpe, f1_velocity
 
 
 def select(label, thr=0.5, prob=0.3):
     idx = (label > thr)
-    shifted_p = torch.roll(idx, 1, -1)
-    shifted_n = torch.roll(idx, -1, -1)
+    shifted_p = torch.roll(idx, shifts=1, dims=-1)
+    shifted_n = torch.roll(idx, shifts=-1, dims=-1)
     random_idx = torch.rand(idx.shape).to(idx.device) < prob
     idx = idx | shifted_p | shifted_n | random_idx
     return idx
@@ -62,11 +61,15 @@ def loss_fn(pred, label):
         )
 
     # select
-    onset_idx = select(onset_label, prob=0.25)
+    onset_idx = select(onset_label, prob=0.3)
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    velocity_idx = select(velocity_label, prob=0.01,)
+    mpe_idx = select(mpe_label, prob=0.9)
+    mpe_pred = mpe_pred[mpe_idx]
+    mpe_label = mpe_label[mpe_idx]
+
+    velocity_idx = select(velocity_label, prob=0.05)
     velocity_pred = velocity_pred[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 

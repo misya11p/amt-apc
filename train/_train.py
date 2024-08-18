@@ -54,13 +54,13 @@ def train(
         all_loss += loss.item()
 
         if prog is not None:
-            prog.update([loss.item(), f1])
+            prog.update([loss.item(), *f1])
 
         if freq_save and (i % freq_save == 0):
             save_model(model, PATH_PC)
-            loss, f1 = prog.now_values()
+            loss, f1_onset, f1_mpe, f1_velocity = prog.now_values()
             with open(file_log, "a") as f:
-                f.write(f"{i}, loss: {loss}, f1: {f1}\n")
+                f.write(f"{i}, loss: {loss}, f1: {f1_onset}, {f1_mpe}, {f1_velocity}\n")
 
     loss = all_loss / i
     return loss
@@ -83,7 +83,7 @@ class Trainer:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)
             model = DDP(model, device_ids=[device])
         self.model = torch.compile(model)
-        self.optimizer = optim.Adam(model.parameters(), lr=1e-3)
+        self.optimizer = optim.Adam(model.parameters(), lr=2.5e-4)
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
         torch.set_float32_matmul_precision("high")
         if self.ddp:
@@ -108,7 +108,7 @@ class Trainer:
             dir_checkpoint = DIR_CHECKPOINTS / date
             dir_checkpoint.mkdir()
             file_log = dir_checkpoint / FILE_NAME_LOG
-            prog = train_progress(width=20, label=["loss", "f1"])
+            prog = train_progress(width=20, label=["loss", "f1_onset", "f1_mpe", "f1_velocity"])
             prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
         else:
             prog = None
