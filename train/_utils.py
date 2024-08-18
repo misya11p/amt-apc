@@ -1,4 +1,5 @@
 import json
+import random
 
 import torch
 import torch.nn as nn
@@ -34,13 +35,12 @@ def f1_fn(
     return f1_avg
 
 
-def select(label, thr=0.5, random_prob=0.3):
+def select(label, thr=0.5, prob=0.3):
     idx = (label > thr)
     shifted_p = torch.roll(idx, 1, -1)
     shifted_n = torch.roll(idx, -1, -1)
-    random = torch.rand(idx.shape).to(idx.device)
-    random = random < random_prob
-    idx = idx | shifted_p | shifted_n | random
+    random_idx = torch.rand(idx.shape).to(idx.device) < prob
+    idx = idx | shifted_p | shifted_n | random_idx
     return idx
 
 
@@ -50,9 +50,6 @@ def loss_fn(pred, label):
     onset_pred, offset_pred, mpe_pred, velocity_pred = pred
 
     onset_label, offset_label, mpe_label, velocity_label = label
-
-    velocity_pred = velocity_pred.reshape(-1, 128)
-    velocity_label = velocity_label.reshape(-1)
 
     with torch.no_grad():
         f1 = f1_fn(
@@ -64,21 +61,12 @@ def loss_fn(pred, label):
             velocity_label.bool()
         )
 
-    # select only the incorrect predictions
-    # onset_idx = ((onset_pred > THRESHOLD) != onset_label)
-    # onset_pred = onset_pred[onset_idx]
-    # onset_label = onset_label[onset_idx]
-
-    # velocity_idx = (velocity_pred.argmax(dim=-1).bool() != velocity_label.bool())
-    # velocity_pred = velocity_pred[velocity_idx]
-    # velocity_label = velocity_label[velocity_idx]
-
     # select
-    onset_idx = select(onset_label, THRESHOLD)
+    onset_idx = select(onset_label, prob=0.25)
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    velocity_idx = select(velocity_label, 0, 0.1)
+    velocity_idx = select(velocity_label, prob=0.01,)
     velocity_pred = velocity_pred[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
