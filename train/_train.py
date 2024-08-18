@@ -129,9 +129,9 @@ class Trainer:
             self.scheduler.step(loss)
 
             if is_parent:
-                loss, f1 = prog.values[-1]
+                loss, f1, _, _, _ = prog.values[-1]
                 path_pc_epoch = dir_checkpoint / f"{n + 1}.pth"
                 save_model(self.model, path_pc_epoch)
                 with open(file_log, "a") as f:
                     time = datetime.now(JST).strftime("%Y/%m/%d %H:%M")
-                    f.write(f"{time}, epoch {n} finished, loss: {loss}, f1: {f1}\n")
+                    f.write(f"{time}, epoch {n + 1} finished, loss: {loss}, f1: {f1}\n")

@@ -117,7 +117,7 @@ class Spec2MIDI(BaseSpec2MIDI):
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
             z = self.gate_sv(h)
-            h = z * h + (1 - z) * sv
+            h = h + z * sv
         return h
 
     def decode(self, h):
