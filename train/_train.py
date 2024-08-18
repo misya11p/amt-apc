@@ -54,13 +54,13 @@ def train(
         all_loss += loss.item()
 
         if prog is not None:
-            prog.update([loss.item(), *f1])
+            prog.update([loss.item(), sum(f1) / 3, *f1])
 
         if freq_save and (i % freq_save == 0):
             save_model(model, PATH_PC)
-            loss, f1_onset, f1_mpe, f1_velocity = prog.now_values()
+            loss, f1, _, _, _ = prog.now_values()
             with open(file_log, "a") as f:
-                f.write(f"{i}, loss: {loss}, f1: {f1_onset}, {f1_mpe}, {f1_velocity}\n")
+                f.write(f"{i}, loss: {loss}, f1: {f1}\n")
 
     loss = all_loss / i
     return loss
@@ -108,7 +108,7 @@ class Trainer:
             dir_checkpoint = DIR_CHECKPOINTS / date
             dir_checkpoint.mkdir()
             file_log = dir_checkpoint / FILE_NAME_LOG
-            prog = train_progress(width=20, label=["loss", "f1_onset", "f1_mpe", "f1_velocity"])
+            prog = train_progress(width=20, label=["loss", "f1", "f1_onset", "f1_mpe", "f1_velocity"])
             prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
         else:
             prog = None
