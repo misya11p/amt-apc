@@ -121,7 +121,7 @@ class Trainer:
             )
 
             if is_parent:
-                loss, f1 = prog.now_values() # miss, 0, 0
+                loss, f1 = prog.values[-1]
                 path_pc_epoch = dir_checkpoint / f"{n + 1}.pth"
                 save_model(self.model, path_pc_epoch)
                 with open(file_log, "a") as f:
