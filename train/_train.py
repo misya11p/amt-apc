@@ -34,6 +34,7 @@ def train(
 ):
     model.train()
 
+    all_loss = 0
     for i, batch in enumerate(dataloader, 1):
         optimizer.zero_grad()
         spec, sv, onset, offset, mpe, velocity = batch
@@ -50,6 +51,8 @@ def train(
         loss.backward()
         optimizer.step()
 
+        all_loss += loss.item()
+
         if prog is not None:
             prog.update([loss.item(), f1])
 
@@ -58,6 +61,9 @@ def train(
             loss, f1 = prog.now_values()
             with open(file_log, "a") as f:
                 f.write(f"{i}, loss: {loss}, f1: {f1}\n")
+
+    loss = all_loss / i
+    return loss
 
 
 class Trainer:
@@ -77,7 +83,8 @@ class Trainer:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)
             model = DDP(model, device_ids=[device])
         self.model = torch.compile(model)
-        self.optimizer = optim.Adam(model.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(model.parameters(), lr=1e-3)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
         torch.set_float32_matmul_precision("high")
         if self.ddp:
             self.sampler = DistributedSampler(
@@ -110,7 +117,7 @@ class Trainer:
         for n in range(self.n_epochs):
             if self.ddp:
                 self.sampler.set_epoch(n)
-            train(
+            loss = train(
                 model=self.model,
                 optimizer=self.optimizer,
                 dataloader=self.dataloader,
@@ -119,6 +126,7 @@ class Trainer:
                 prog=prog,
                 file_log=file_log,
             )
+            self.scheduler.step(loss)
 
             if is_parent:
                 loss, f1 = prog.values[-1]
