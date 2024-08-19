@@ -58,9 +58,9 @@ def train(
 
         if freq_save and (i % freq_save == 0):
             save_model(model, PATH_PC)
-            loss, f1, _, _, _ = prog.now_values()
+            loss, f1, f1_onset, f1_mpe, f1_velocity = prog.now_values()
             with open(file_log, "a") as f:
-                f.write(f"{i}, loss: {loss}, f1: {f1}\n")
+                f.write(f"{i}, loss: {loss}, f1: {f1}, f1_onset: {f1_onset}, f1_mpe: {f1_mpe}, f1_velocity: {f1_velocity}\n")
 
     loss = all_loss / i
     return loss
@@ -129,9 +129,12 @@ class Trainer:
             self.scheduler.step(loss)
 
             if is_parent:
-                loss, f1, _, _, _ = prog.values[-1]
+                loss, f1, f1_onset, f1_mpe, f1_velocity = prog.values[-1]
                 path_pc_epoch = dir_checkpoint / f"{n + 1}.pth"
                 save_model(self.model, path_pc_epoch)
                 with open(file_log, "a") as f:
                     time = datetime.now(JST).strftime("%Y/%m/%d %H:%M")
-                    f.write(f"{time}, epoch {n + 1} finished, loss: {loss}, f1: {f1}\n")
+                    f.write(
+                        f"{time}, epoch {n + 1} finished, loss: {loss}, f1: {f1}, "
+                        f"f1_onset: {f1_onset}, f1_mpe: {f1_mpe}, f1_velocity: {f1_velocity}\n"
+                    )
