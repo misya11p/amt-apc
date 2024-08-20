@@ -1,0 +1,7 @@
+{
+  "threshold": {
+    "onset": 0.5,
+    "offset": 1.0,
+    "mpe": 0.3
+  }
+}
