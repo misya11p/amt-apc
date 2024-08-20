@@ -61,15 +61,15 @@ def loss_fn(pred, label):
         )
 
     # select
-    onset_idx = select(onset_label, prob=0.3)
+    onset_idx = select(onset_label, prob=0.25)
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    mpe_idx = select(mpe_label, prob=0.7)
+    mpe_idx = select(mpe_label, prob=0.5)
     mpe_pred = mpe_pred[mpe_idx]
     mpe_label = mpe_label[mpe_idx]
 
-    velocity_idx = select(velocity_label, prob=0.03)
+    velocity_idx = select(velocity_label, prob=0.01)
     velocity_pred = velocity_pred[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
