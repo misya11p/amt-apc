@@ -62,21 +62,34 @@ def loss_fn(pred, label):
 
     # select
     onset_idx = select(onset_label, prob=0.25)
+    onset_f_pred = onset_f_pred[onset_idx]
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
     mpe_idx = select(mpe_label, prob=0.3)
+    mpe_f_pred = mpe_f_pred[mpe_idx]
     mpe_pred = mpe_pred[mpe_idx]
     mpe_label = mpe_label[mpe_idx]
 
     velocity_idx = select(velocity_label, prob=0.01)
+    velocity_f_pred = velocity_f_pred[velocity_idx]
     velocity_pred = velocity_pred[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
     # calculate loss
+    loss_onset_f = BCE_LOSS(onset_f_pred, onset_label)
     loss_onset = BCE_LOSS(onset_pred, onset_label)
+
+    loss_mpe_f = BCE_LOSS(mpe_f_pred, mpe_label)
     loss_mpe = BCE_LOSS(mpe_pred, mpe_label)
+
+    loss_velocity_f = CE_LOSS(velocity_f_pred, velocity_label)
     loss_velocity = CE_LOSS(velocity_pred, velocity_label)
-    loss = (loss_onset + loss_mpe + loss_velocity) / 3
+
+    loss = (
+        loss_onset_f + loss_onset +
+        loss_mpe_f + loss_mpe +
+        loss_velocity_f + loss_velocity
+    ) / 6
 
     return loss, f1
