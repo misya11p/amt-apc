@@ -83,7 +83,7 @@ class Trainer:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)
             model = DDP(model, device_ids=[device])
         self.model = torch.compile(model)
-        self.optimizer = optim.Adam(model.parameters(), lr=2.5e-4)
+        self.optimizer = optim.Adam(model.parameters(), lr=1e-4)
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
         torch.set_float32_matmul_precision("high")
         if self.ddp:
