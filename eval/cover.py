@@ -1,3 +1,4 @@
+import sys; sys.path.append("./")
 import argparse
 from pathlib import Path
 import json
@@ -9,7 +10,7 @@ from models import Pipeline
 
 
 DIR_NAME_RAW = "raw/"
-DIR_NAME_RAW = "filtered/"
+DIR_NAME_RAW = "eval/tmpraw/"
 DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
@@ -20,7 +21,7 @@ with open("data/style_vector.json") as f:
 
 
 def main(args):
-    dir_dataset = Path(args.path_dataset)
+    dir_dataset = Path(args.dir_dataset)
     dir_input = dir_dataset / DIR_NAME_RAW
     dir_tmp = dir_dataset / args.dir_tmp
     dir_tmp.mkdir(parents=True, exist_ok=True)
@@ -34,7 +35,7 @@ def main(args):
     songs = sorted(songs)
     for song in songs:
         print(song.stem)
-        orig, = list(orig.glob("*.wav"))
+        orig, = list(song.glob("*.wav"))
         path_midi = dir_tmp / f"{orig.stem}.mid"
         sv = torch.tensor(random.choice(STYLE_VECTORS))
         pipeline.wav2midi(
