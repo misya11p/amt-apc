@@ -65,7 +65,7 @@ def loss_fn(pred, label):
     onset_pred = onset_pred[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    mpe_idx = select(mpe_label, prob=0.5)
+    mpe_idx = select(mpe_label, prob=0.3)
     mpe_pred = mpe_pred[mpe_idx]
     mpe_label = mpe_label[mpe_idx]
 
