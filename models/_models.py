@@ -13,6 +13,7 @@ from .hFT_Transformer.model_spec2midi import (
 )
 
 
+DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
 
@@ -20,7 +21,7 @@ with open("models/config.json", "r") as f:
 class Pipeline(AMT):
     def __init__(
         self,
-        device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        device: torch.device = DEFAULT_DEVICE,
         amt: bool = False,
         sv_dim: int = 0,
         path_model: str | None = None,
@@ -32,11 +33,13 @@ class Pipeline(AMT):
 
         Args:
             device (torch.device, optional):
-                Device to use for the model. Defaults to
-                torch.device("cuda" if torch.cuda.is_available() else "cpu").
+                Device to use for the model. Defaults to auto.
             amt (bool, optional):
                 Whether to use the AMT model.
                 Defaults to False (use the cover model).
+            sv_dim (int, optional):
+                Dimension of the style vector. If 0, the style vector is
+                not used. Defaults to 0.
             path_model (str, optional):
                 Path to the model. Defaults to None.
             skip_load_model (bool, optional):
@@ -71,7 +74,19 @@ class Pipeline(AMT):
             path_input (str): Path to the input audio file.
             path_output (str): Path to the output MIDI file.
             sv (None | torch.Tensor, optional): Style vector.
+            thred_onset (float, optional): Threshold for onset. Defaults to 0.5.
+            thred_offset (float, optional): Threshold for offset. Defaults to 0.5.
+            thred_mpe (float, optional): Threshold for MPE. Defaults to 0.5.
         """
+        if sv is not None:
+            if sv.dim() == 1:
+                sv = sv.unsqueeze(0)
+            if sv.dim() == 2:
+                pass
+            else:
+                raise ValueError(f"Invalid shape of style vector: {sv.shape}")
+            sv = sv.to(self.device)
+
         feature = self.wav2feature(path_input)
         _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
         note = self.mpe2note(
@@ -104,15 +119,15 @@ class Spec2MIDI(BaseSpec2MIDI):
                 nn.Sigmoid(),
             )
 
-    def forward(self, x, sv: None | torch.Tensor = None):
-        h = self.encode(x, sv) # (batch_size, n_frames, hidden_size)
+    def forward(self, x, sv=None):
+        h = self.encode(x, sv)
         y = self.decode(h)
         return y
 
     def encode(self, x, sv=None):
         h = self.encoder(x)
         if self.sv_dim and (sv is not None):
-            sv = self.fc_sv(sv) # (batch_size, hidden_size)
+            sv = self.fc_sv(sv)
             _, n_frames, n_bin, _ = h.shape
             sv = sv.unsqueeze(1).unsqueeze(2)
             sv = sv.repeat(1, n_frames, n_bin, 1)
@@ -148,6 +163,9 @@ def load_model(
             Defaults to False (use the cover model).
         path_model (str, optional):
             Path to the model. Defaults to None.
+        sv_dim (int, optional):
+            Dimension of the style vector. If 0, the style vector is not
+            used. Defaults to 0.
         no_load (bool, optional):
             Whether to skip loading the model parameters. Defaults to False.
     Returns:
