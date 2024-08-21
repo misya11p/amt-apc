@@ -17,7 +17,11 @@ def main(args):
     covers = list(dir_input.glob("*.mid"))
     covers = sorted(covers)
 
-    fs = FluidSynth()
+    if args.sound_font:
+        fs = FluidSynth(sound_font=args.sound_font)
+    else:
+        fs = FluidSynth()
+
     for cover in covers:
         path_output = dir_output / f"{cover.stem}.wav"
         fs.midi_to_audio(str(cover), str(path_output))
@@ -26,5 +30,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dir_data", type=str, default="./eval/data/")
+    parser.add_argument("--sound_font", type=str, default=None)
     args = parser.parse_args()
     main(args)
