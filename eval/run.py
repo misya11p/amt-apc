@@ -4,16 +4,11 @@ from pathlib import Path
 from ChromaCoverId import ChromaFeatures, cross_recurrent_plot, dmax_measure
 
 
-DIR_NAME_SONGS = "songs"
-DIR_NAME_COVER_AUDIO = "cover_audio"
-
-
 def main(args):
-    dir_data = Path(args.dir_data)
-    dir_cover = dir_data / DIR_NAME_COVER_AUDIO
-    dir_songs = dir_data / DIR_NAME_SONGS
+    dir_covers = Path(args.dir_covers)
+    dir_songs = Path(args.dir_songs)
 
-    covers = list(dir_cover.glob("*.wav"))
+    covers = list(dir_covers.glob("*.wav"))
     covers = sorted(covers)
 
     no_origs = []
@@ -57,7 +52,8 @@ def write_result(dists, no_origs, path_output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--dir_data", type=str, default="./eval/data/")
+    parser.add_argument("--dir_covers", type=str, default="./eval/data/cover_audio/")
+    parser.add_argument("--dir_songs", type=str, default="./eval/data/songs")
     parser.add_argument("-o", "--path_output", type=str, default="./eval/result.txt")
     args = parser.parse_args()
     main(args)
