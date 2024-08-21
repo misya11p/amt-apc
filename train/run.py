@@ -17,7 +17,7 @@ def main(args):
     os.environ["MASTER_PORT"] = "12355"
 
     dir_dataset = Path(args.dir_dataset)
-    dataset = PianoCoversDataset(dir_dataset)
+    dataset = PianoCoversDataset(dir_dataset, use_all=args.use_all)
     trainer = Trainer(
         dataset=dataset,
         n_gpus=args.n_gpus,
@@ -44,5 +44,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--no_sv", action="store_true")
+    parser.add_argument("--use_all", action="store_true")
     args = parser.parse_args()
     main(args)
