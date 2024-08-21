@@ -4,10 +4,15 @@ from pathlib import Path
 from midi2audio import FluidSynth
 
 
+DIR_NAME_COVER_MIDI = "cover_midi"
+DIR_NAME_COVER_AUDIO = "cover_audio"
+
+
 def main(args):
-    dir_input = Path(args.dir_input)
-    dir_output = Path(args.dir_output)
-    dir_output.mkdir(parents=True, exist_ok=True)
+    dir_data = Path(args.dir_data)
+    dir_input = dir_data / DIR_NAME_COVER_MIDI
+    dir_output = dir_data / DIR_NAME_COVER_AUDIO
+    dir_output.mkdir(exist_ok=True)
 
     covers = list(dir_input.glob("*.mid"))
     covers = sorted(covers)
@@ -17,9 +22,9 @@ def main(args):
         path_output = dir_output / f"{cover.stem}.wav"
         fs.midi_to_audio(str(cover), str(path_output))
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--dir_input", type=str, default="./eval/tmp")
-    parser.add_argument("-o", "--dir_output", type=str, default="./eval/covers/")
+    parser.add_argument("-d", "--dir_data", type=str, default="./eval/data/")
     args = parser.parse_args()
     main(args)
