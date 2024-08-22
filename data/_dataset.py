@@ -19,14 +19,23 @@ with open("data/train.txt", "r") as f:
 
 
 class PianoCoversDataset(Dataset):
-    def __init__(self, dir_dataset: str, use_all=True):
+    def __init__(self, dir_dataset: str, use="train"):
         self.dir_dataset = Path(dir_dataset)
         self.data = list((self.dir_dataset / DIR_NAME_LABEL).glob("*.npz"))
-        if not use_all:
+        if use == "train":
             self.data = [
                 path for path in self.data
                 if self.get_id_n(path)[0] in TRAIN_IDS
             ]
+        elif use == "test":
+            self.data = [
+                path for path in self.data
+                if self.get_id_n(path)[0] not in TRAIN_IDS
+            ]
+        elif use == "all":
+            pass
+        else:
+            raise ValueError(f"Invalid value for 'use': {use}")
 
     def __len__(self):
         return len(self.data)
