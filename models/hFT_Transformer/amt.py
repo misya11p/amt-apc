@@ -344,10 +344,12 @@ class AMT():
         return a_note
 
 
-    def note2midi(self, a_note, f_midi):
+    def note2midi(self, a_note, f_midi, min_length=0.):
         midi = pretty_midi.PrettyMIDI()
         instrument = pretty_midi.Instrument(program=0)
         for note in a_note:
+            if note['offset'] - note['onset'] < min_length:
+                continue
             instrument.notes.append(pretty_midi.Note(velocity=note['velocity'], pitch=note['pitch'], start=note['onset'], end=note['offset']))
         midi.instruments.append(instrument)
         midi.write(f_midi)

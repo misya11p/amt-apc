@@ -66,6 +66,7 @@ class Pipeline(AMT):
         thred_onset: float = 0.5,
         thred_offset: float = 0.5,
         thred_mpe: float = 0.5,
+        min_length: float = 0.,
     ):
         """
         Convert audio to MIDI.
@@ -77,6 +78,7 @@ class Pipeline(AMT):
             thred_onset (float, optional): Threshold for onset. Defaults to 0.5.
             thred_offset (float, optional): Threshold for offset. Defaults to 0.5.
             thred_mpe (float, optional): Threshold for MPE. Defaults to 0.5.
+            min_length (float, optional): Minimum length (s) of the note. Defaults to 0.
         """
         if sv is not None:
             if sv.dim() == 1:
@@ -98,7 +100,7 @@ class Pipeline(AMT):
             thred_offset=thred_offset,
             thred_mpe=thred_mpe,
         )
-        self.note2midi(note, path_output)
+        self.note2midi(note, path_output, min_length)
 
 
 class Spec2MIDI(BaseSpec2MIDI):
