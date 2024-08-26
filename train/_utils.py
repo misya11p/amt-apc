@@ -37,7 +37,7 @@ def select(label, thr=0.5, prob=0.):
     return idx
 
 
-def loss_fn(pred, label, beta=0.25):
+def loss_fn(pred, label, beta=0.5):
     # unpack
     onset_pred_f, offset_pred_f, mpe_pred_f, velocity_pred_f, _, \
     onset_pred_t, offset_pred_t, mpe_pred_t, velocity_pred_t = pred
