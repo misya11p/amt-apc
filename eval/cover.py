@@ -28,7 +28,7 @@ def main(args):
         params = json.load(f)
 
     device = torch.device(args.device) if args.device else DEFAULT_DEVICE
-    pipeline = Pipeline(path_model="pc.pth", device=device, sv_dim=SV_DIM)
+    pipeline = Pipeline(path_model=args.model, device=device, sv_dim=SV_DIM)
 
     with open(args.path_style_vector) as f:
         style_vectors = list(json.load(f)["style_vector"].values())
