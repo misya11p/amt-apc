@@ -74,8 +74,8 @@ def _get_style(midi, bpm):
         seg_mpe = mpe[i:i + n_frames_measure]
         seg_vel = velocity[i:i + n_frames_measure]
         if seg_vel.any():
-            on_ratio.append(seg_mpe.sum())
-            onset_ratio.append(seg_vel.astype(bool).sum())
+            on_ratio.append(int(seg_mpe.sum()))
+            onset_ratio.append(int(seg_vel.astype(bool).sum()))
 
     return velocities, pitches, onset_ratio, on_ratio
 
