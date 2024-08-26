@@ -1,5 +1,3 @@
-import json
-
 import torch
 import torch.nn as nn
 from sklearn.metrics import f1_score
@@ -8,9 +6,6 @@ from sklearn.metrics import f1_score
 THRESHOLD = 0.5
 BCE_LOSS = nn.BCELoss()
 CE_LOSS = nn.CrossEntropyLoss()
-with open("models/config.json", "r") as f:
-    CONFIG = json.load(f)
-N_VELOCITY = CONFIG["data"]["midi"]["num_velocity"]
 
 
 def f1_fn(
@@ -30,31 +25,30 @@ def f1_fn(
     f1_onset = f1_score(onset_label, onset_pred, zero_division=1)
     f1_mpe = f1_score(mpe_label, mpe_pred, zero_division=1)
     f1_velocity = f1_score(velocity_label, velocity_pred, zero_division=1)
-    # f1_avg = (f1_onset + f1_mpe + f1_velocity) / 3
     return f1_onset, f1_mpe, f1_velocity
 
 
-def select(label, thr=0.5, prob=0.3):
-    idx = (label > thr)
-    shifted_p = torch.roll(idx, shifts=1, dims=-1)
-    shifted_n = torch.roll(idx, shifts=-1, dims=-1)
-    random_idx = torch.rand(idx.shape).to(idx.device) < prob
-    idx = idx | shifted_p | shifted_n | random_idx
+def select(label, thr=0.5, prob=0.):
+    idx_pos = (label > thr)
+    shifted_p = torch.roll(idx_pos, shifts=1, dims=-1)
+    shifted_n = torch.roll(idx_pos, shifts=-1, dims=-1)
+    idx_rand = torch.rand(idx_pos.shape).to(idx_pos.device) < prob
+    idx = idx_pos | shifted_p | shifted_n | idx_rand
     return idx
 
 
-def loss_fn(pred, label):
+def loss_fn(pred, label, beta=0.25):
     # unpack
-    onset_f_pred, offset_f_pred, mpe_f_pred, velocity_f_pred, _, \
-    onset_pred, offset_pred, mpe_pred, velocity_pred = pred
+    onset_pred_f, offset_pred_f, mpe_pred_f, velocity_pred_f, _, \
+    onset_pred_t, offset_pred_t, mpe_pred_t, velocity_pred_t = pred
 
     onset_label, offset_label, mpe_label, velocity_label = label
 
     with torch.no_grad():
         f1 = f1_fn(
-            (onset_pred > THRESHOLD),
-            (mpe_pred > THRESHOLD),
-            velocity_pred.argmax(dim=-1).bool(),
+            (onset_pred_t > THRESHOLD),
+            (mpe_pred_t > THRESHOLD),
+            velocity_pred_t.argmax(dim=-1).bool(),
             onset_label.bool(),
             mpe_label.bool(),
             velocity_label.bool()
@@ -62,34 +56,32 @@ def loss_fn(pred, label):
 
     # select
     onset_idx = select(onset_label, prob=0.25)
-    onset_f_pred = onset_f_pred[onset_idx]
-    onset_pred = onset_pred[onset_idx]
+    onset_pred_f = onset_pred_f[onset_idx]
+    onset_pred_t = onset_pred_t[onset_idx]
     onset_label = onset_label[onset_idx]
 
     mpe_idx = select(mpe_label, prob=0.3)
-    mpe_f_pred = mpe_f_pred[mpe_idx]
-    mpe_pred = mpe_pred[mpe_idx]
+    mpe_pred_f = mpe_pred_f[mpe_idx]
+    mpe_pred_t = mpe_pred_t[mpe_idx]
     mpe_label = mpe_label[mpe_idx]
 
     velocity_idx = select(velocity_label, prob=0.01)
-    velocity_f_pred = velocity_f_pred[velocity_idx]
-    velocity_pred = velocity_pred[velocity_idx]
+    velocity_pred_f = velocity_pred_f[velocity_idx]
+    velocity_pred_t = velocity_pred_t[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
     # calculate loss
-    loss_onset_f = BCE_LOSS(onset_f_pred, onset_label)
-    loss_onset = BCE_LOSS(onset_pred, onset_label)
+    loss_onset_f = BCE_LOSS(onset_pred_f, onset_label)
+    loss_onset_t = BCE_LOSS(onset_pred_t, onset_label)
 
-    loss_mpe_f = BCE_LOSS(mpe_f_pred, mpe_label)
-    loss_mpe = BCE_LOSS(mpe_pred, mpe_label)
+    loss_mpe_f = BCE_LOSS(mpe_pred_f, mpe_label)
+    loss_mpe_t = BCE_LOSS(mpe_pred_t, mpe_label)
 
-    loss_velocity_f = CE_LOSS(velocity_f_pred, velocity_label)
-    loss_velocity = CE_LOSS(velocity_pred, velocity_label)
+    loss_velocity_f = CE_LOSS(velocity_pred_f, velocity_label)
+    loss_velocity_t = CE_LOSS(velocity_pred_t, velocity_label)
 
-    loss = (
-        loss_onset_f + loss_onset +
-        loss_mpe_f + loss_mpe +
-        loss_velocity_f + loss_velocity
-    ) / 6
+    loss_f = (loss_onset_f + loss_mpe_f + loss_velocity_f) / 3
+    loss_t = (loss_onset_t + loss_mpe_t + loss_velocity_t) / 3
+    loss = beta * loss_f + (1 - beta) * loss_t
 
     return loss, f1
