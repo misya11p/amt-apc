@@ -33,7 +33,7 @@ def main(args):
     piano2orig = {}
 
     songs = list(dir_input.glob("*/"))
-    songs = sorted(songs)
+    songs = sorted(songs)[-1:]
     n_songs = len(songs)
     for ns, song in enumerate(songs, 1):
         name_song = song.name
@@ -48,10 +48,10 @@ def main(args):
         for ns, i in enumerate(idxs):
             spec_block = (spec[i:i + N_FRAMES + MARGIN]).T
             sid = str(ns).zfill(n_dig)
-            path = dir_spec / f"{orig.stem}_{sid}"
-            if (not args.overwrite) and Path(path).exists():
+            filename = dir_spec / f"{orig.stem}_{sid}"
+            if (not args.overwrite) and Path(filename).with_suffix(".npy").exists():
                 continue
-            np.save(path, spec_block)
+            np.save(filename, spec_block)
 
         pianos = list(dir_piano.glob("*.npz"))
         pianos = sorted(pianos)
@@ -69,12 +69,12 @@ def main(args):
             for ns, i in enumerate(range(0, length_song, N_FRAMES)):
                 midi_block = (midi_stack[:, i:i + N_FRAMES])
                 sid = str(ns).zfill(n_dig)
-                path = dir_label / f"{piano.stem}_{sid}"
-                if (not args.overwrite) and path.exists():
+                filename = dir_label / f"{piano.stem}_{sid}"
+                if (not args.overwrite) and filename.with_suffix(".npz").exists():
                     continue
 
                 kwargs.append({
-                    "path": path,
+                    "filename": filename,
                     "data": {
                         "onset": midi_block[0].T,
                         "offset": midi_block[1].T,
@@ -85,7 +85,7 @@ def main(args):
             if ne := args.rm_ends:
                 kwargs = kwargs[ne:-ne]
             for kw in kwargs:
-                np.savez(kw["path"], **kw["data"])
+                np.savez(kw["filename"], **kw["data"])
 
             print(".", end="")
         print(f" Done.")
