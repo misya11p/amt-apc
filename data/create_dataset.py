@@ -33,7 +33,7 @@ def main(args):
     piano2orig = {}
 
     songs = list(dir_input.glob("*/"))
-    songs = sorted(songs)[-1:]
+    songs = sorted(songs)
     n_songs = len(songs)
     for ns, song in enumerate(songs, 1):
         name_song = song.name
