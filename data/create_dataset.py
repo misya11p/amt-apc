@@ -1,12 +1,11 @@
 import argparse
 from pathlib import Path
 import json
-import functools
 
 import numpy as np
 
+from data import preprocess_feature
 
-print = functools.partial(print, flush=True)
 
 DIR_NAME_ARRAY = "array/"
 DIR_NAME_DATA = "data/"
@@ -30,23 +29,23 @@ def main(args):
     dir_spec.mkdir(exist_ok=True)
     dir_label = dir_output / DIR_NAME_LABEL
     dir_label.mkdir(exist_ok=True)
-    piano2orig = {}
 
     songs = list(dir_input.glob("*/"))
     songs = sorted(songs)
     n_songs = len(songs)
     for ns, song in enumerate(songs, 1):
         name_song = song.name
-        print(f"{ns}/{n_songs}: {name_song}", end=" ")
+        print(f"{ns}/{n_songs}: {name_song}", end=" ", flush=True)
         dir_piano = song / DIR_NAME_PIANO
 
         orig, = list(song.glob("*.npy"))
         spec = np.load(orig)
+        spec = preprocess_feature(spec)
         length_song = len(spec) - MARGIN
         idxs = range(0, length_song, N_FRAMES)
         n_dig = len(str(len(idxs)))
         for ns, i in enumerate(idxs):
-            spec_block = (spec[i:i + N_FRAMES + MARGIN]).T
+            spec_block = (spec[i:i + N_FRAMES + MARGIN]).T # (n_bins, n_frames)
             sid = str(ns).zfill(n_dig)
             filename = dir_spec / f"{orig.stem}_{sid}"
             if (not args.overwrite) and Path(filename).with_suffix(".npy").exists():
@@ -56,42 +55,60 @@ def main(args):
         pianos = list(dir_piano.glob("*.npz"))
         pianos = sorted(pianos)
         for piano in pianos:
-            piano2orig[piano.stem] = orig.stem
-            midi = np.load(piano)
-            midi_stack = np.stack((
-                midi["onset"],
-                midi["offset"],
-                midi["mpe"],
-                midi["velocity"],
-            ))
+            update_piano2orig(piano.stem, orig.stem)
+            label = np.load(piano)
+            label = align_length(label, length_song)
 
-            kwargs = []
+            args = []
             for ns, i in enumerate(range(0, length_song, N_FRAMES)):
-                midi_block = (midi_stack[:, i:i + N_FRAMES])
+                # (n_frames, n_bins)
+                onset_block = label["onset"][i:i + N_FRAMES] # float [0, 1]
+                offset_block = label["offset"][i:i + N_FRAMES] # float [0, 1]
+                mpe_block = label["mpe"][i:i + N_FRAMES] # int {0, 1}
+                velocity_block = label["velocity"][i:i + N_FRAMES] # int [0, 127]
+
                 sid = str(ns).zfill(n_dig)
-                filename = dir_label / f"{piano.stem}_{sid}"
-                if (not args.overwrite) and filename.with_suffix(".npz").exists():
+                prefix = dir_label / f"{piano.stem}_{sid}"
+                if (not args.overwrite) and prefix.with_suffix(".npz").exists():
                     continue
 
-                kwargs.append({
-                    "filename": filename,
+                args.append({
+                    "prefix": prefix,
                     "data": {
-                        "onset": midi_block[0].T,
-                        "offset": midi_block[1].T,
-                        "mpe": midi_block[2].T,
-                        "velocity": midi_block[3].T,
+                        "onset": onset_block,
+                        "offset": offset_block,
+                        "mpe": mpe_block,
+                        "velocity": velocity_block,
                     }
                 })
             if ne := args.rm_ends:
-                kwargs = kwargs[ne:-ne]
-            for kw in kwargs:
-                np.savez(kw["filename"], **kw["data"])
+                args = args[ne:-ne]
+            for kw in args:
+                np.savez(kw["prefix"], **kw["data"])
 
-            print(".", end="")
-        print(f" Done.")
+            print(".", end="", flush=True)
+        print(f" Done.", flush=True)
 
+
+def update_piano2orig(key, value):
+    with open(PATH_PIANO2ORIG, "r") as f:
+        piano2orig = json.load(f)
+    piano2orig[key] = value
     with open(PATH_PIANO2ORIG, "w") as f:
         json.dump(piano2orig, f, indent=2)
+
+
+def align_length(label, length):
+    length_label = len(label["onset"])
+    if length_label == length:
+        pass
+    elif length_label > length:
+        for key in label.keys():
+            label[key] = label[key][:length]
+    else:
+        for key in label.keys():
+            label[key] = np.pad(label[key], ((0, length - length_label), (0, 0)))
+    return label
 
 
 if __name__ == "__main__":

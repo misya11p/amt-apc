@@ -47,11 +47,10 @@ class PianoCoversDataset(Dataset):
 
         spec = torch.from_numpy(spec).float()
         sv = torch.tensor(sv).float()
-        # 修正予定
-        onset = torch.from_numpy(label["onset"]).float().T
-        offset = torch.from_numpy(label["offset"]).float().T
-        mpe = torch.from_numpy(label["mpe"]).float().T
-        velocity = torch.from_numpy(label["velocity"]).T
+        onset = torch.from_numpy(label["onset"])
+        offset = torch.from_numpy(label["offset"])
+        mpe = torch.from_numpy(label["mpe"])
+        velocity = torch.from_numpy(label["velocity"])
 
         return spec, sv, onset, offset, mpe, velocity
 

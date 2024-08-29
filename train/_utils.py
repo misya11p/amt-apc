@@ -28,8 +28,8 @@ def f1_fn(
     return f1_onset, f1_mpe, f1_velocity
 
 
-def select(label, thr=0.5, prob=0.):
-    idx_pos = (label > thr)
+def select(label, prob=0.):
+    idx_pos = (label > 0)
     shifted_p = torch.roll(idx_pos, shifts=1, dims=-1)
     shifted_n = torch.roll(idx_pos, shifts=-1, dims=-1)
     idx_rand = torch.rand(idx_pos.shape).to(idx_pos.device) < prob
@@ -43,6 +43,7 @@ def loss_fn(pred, label, beta=0.5):
     onset_pred_t, offset_pred_t, mpe_pred_t, velocity_pred_t = pred
 
     onset_label, offset_label, mpe_label, velocity_label = label
+    mpe_label = mpe_label.float()
 
     with torch.no_grad():
         f1 = f1_fn(
@@ -77,6 +78,8 @@ def loss_fn(pred, label, beta=0.5):
     loss_mpe_f = BCE_LOSS(mpe_pred_f, mpe_label)
     loss_mpe_t = BCE_LOSS(mpe_pred_t, mpe_label)
 
+    # 後で直す
+    velocity_label = velocity_label.long()
     loss_velocity_f = CE_LOSS(velocity_pred_f, velocity_label)
     loss_velocity_t = CE_LOSS(velocity_pred_t, velocity_label)
 
