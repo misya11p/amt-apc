@@ -1,10 +1,11 @@
 import argparse
 from pathlib import Path
 import json
+import random
 
 import numpy as np
 
-from data import preprocess_feature
+from _utils import preprocess_feature
 
 
 DIR_NAME_ARRAY = "array/"
@@ -12,7 +13,9 @@ DIR_NAME_DATA = "data/"
 DIR_NAME_PIANO = "piano/"
 DIR_NAME_SPEC = "spec/"
 DIR_NAME_LABEL = "label/"
-PATH_PIANO2ORIG = "data/piano2orig.json"
+PATH_DB = "data/db.json"
+with open(PATH_DB, "r") as f:
+    db = json.load(f)
 
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
@@ -31,6 +34,11 @@ def main(args):
     dir_label.mkdir(exist_ok=True)
 
     songs = list(dir_input.glob("*/"))
+    is_train = {song.name: True for song in songs}
+    random.shuffle(songs)
+    for song in songs[:int(len(songs) * args.valid_size)]:
+        is_train[song.name] = False
+
     songs = sorted(songs)
     n_songs = len(songs)
     for ns, song in enumerate(songs, 1):
@@ -55,11 +63,22 @@ def main(args):
         pianos = list(dir_piano.glob("*.npz"))
         pianos = sorted(pianos)
         for piano in pianos:
-            update_piano2orig(piano.stem, orig.stem)
+            info_piano = db[piano.stem]
+            if info_piano["n_notes"] < args.min_notes:
+                info_piano["in_dataset"] = False
+                save(db)
+                continue
+
             label = np.load(piano)
+            label = {
+                "onset": label["onset"],
+                "offset": label["offset"],
+                "mpe": label["mpe"],
+                "velocity": label["velocity"],
+            }
             label = align_length(label, length_song)
 
-            args = []
+            save_args = []
             for ns, i in enumerate(range(0, length_song, N_FRAMES)):
                 # (n_frames, n_bins)
                 onset_block = label["onset"][i:i + N_FRAMES] # float [0, 1]
@@ -72,7 +91,7 @@ def main(args):
                 if (not args.overwrite) and prefix.with_suffix(".npz").exists():
                     continue
 
-                args.append({
+                save_args.append({
                     "prefix": prefix,
                     "data": {
                         "onset": onset_block,
@@ -82,20 +101,24 @@ def main(args):
                     }
                 })
             if ne := args.rm_ends:
-                args = args[ne:-ne]
-            for kw in args:
-                np.savez(kw["prefix"], **kw["data"])
+                save_args = save_args[ne:-ne]
+                included_range = [ne, len(idxs) - ne]
+            else:
+                included_range = [0, len(idxs)]
+            for arg in save_args:
+                np.savez(arg["prefix"], **arg["data"])
+            info_piano["in_dataset"] = True
+            info_piano["included_range"] = included_range
+            info_piano["n_segments"] = len(save_args)
+            info_piano["train"] = is_train[name_song]
 
             print(".", end="", flush=True)
         print(f" Done.", flush=True)
 
 
-def update_piano2orig(key, value):
-    with open(PATH_PIANO2ORIG, "r") as f:
-        piano2orig = json.load(f)
-    piano2orig[key] = value
-    with open(PATH_PIANO2ORIG, "w") as f:
-        json.dump(piano2orig, f, indent=2)
+def save(db):
+    with open(PATH_DB, "w") as f:
+        json.dump(db, f, indent=2, ensure_ascii=False)
 
 
 def align_length(label, length):
@@ -115,6 +138,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create train dataset.")
     parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--valid_size", type=float, default=0.2, help="Validation size. Defaults to 0.2.")
+    parser.add_argument("--min_notes", type=int, default=500, help="Minimum number of notes to keep the song. Defaults to 500.")
     parser.add_argument("--rm_ends", type=int, default=2, help="Remove n segments from the beginning and the end of the song. Defaults to 2.")
     args = parser.parse_args()
     main(args)

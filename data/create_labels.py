@@ -1,13 +1,14 @@
 import argparse
 from pathlib import Path
+import json
 import time
 import functools
 
 import torch
 import numpy as np
 
-from data import wav2feature, preprocess_feature
-from ._utils_midi import midi2note, note2label
+from _utils import wav2feature
+from _utils_midi import midi2note, note2label
 
 
 print = functools.partial(print, flush=True)
@@ -15,6 +16,7 @@ print = functools.partial(print, flush=True)
 DIR_NAME_SYNCED = "synced/"
 DIR_NAME_ARRAY = "array/"
 DIR_NAME_PIANO = "piano/"
+PATH_DB = "data/db.json"
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -45,8 +47,6 @@ def main(args):
         pianos = sorted(list((song / DIR_NAME_PIANO).glob("*.mid")))
 
         spec = wav2feature(str(orig))
-        # spec = preprocess_feature(spec)
-        # length = len(spec)
         np.save(dir_song / orig.stem, spec)
         labels = {}
         for piano in pianos:
@@ -55,15 +55,22 @@ def main(args):
                 continue
             label = get_label(piano)
             labels[prefix] = label
+            update_db(
+                piano.stem,
+                {
+                    "original": orig.stem,
+                    "title": orig.parent.stem,
+                    "n_notes": count_notes(label)
+                }
+            )
 
         for prefix, label in labels.items():
-            # labels = align_length(label, length)
             np.savez(
                 prefix,
-                onset=labels["onset"],
-                offset=labels["offset"],
-                mpe=labels["mpe"],
-                velocity=labels["velocity"],
+                onset=label["onset"],
+                offset=label["offset"],
+                mpe=label["mpe"],
+                velocity=label["velocity"],
             )
             print(".", end="")
         print(f" Done ({time.time()-time_start:.2f}s)")
@@ -81,17 +88,20 @@ def get_label(path_midi):
     return label
 
 
-def align_length(label, length):
-    length_label = len(label["onset"])
-    if length_label == length:
-        pass
-    elif length_label > length:
-        for key in label.keys():
-            label[key] = label[key][:length]
+def count_notes(label):
+    return label["onset"].sum() / 3
+
+
+def update_db(id_cover, data):
+    if Path(PATH_DB).exists():
+        with open(PATH_DB, "r") as f:
+            db = json.load(f)
     else:
-        for key in label.keys():
-            label[key] = np.pad(label[key], ((0, length - length_label), (0, 0)))
-    return label
+        db = {}
+    db[id_cover] = data
+    with open(PATH_DB, "w") as f:
+        json.dump(db, f, indent=2, ensure_ascii=False)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
