@@ -45,6 +45,7 @@ def main(args):
             thred_onset=params["threshold"]["onset"],
             thred_offset=params["threshold"]["offset"],
             thred_mpe=params["threshold"]["mpe"],
+            min_length=args.min_length,
         )
 
 
@@ -55,5 +56,6 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--path_params", type=str, default="./eval/params.json")
     parser.add_argument("--path_style_vector", type=str, default="./data/style_vector.json")
+    parser.add_argument("--min_length", type=float, default=0.08)
     args = parser.parse_args()
     main(args)
