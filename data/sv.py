@@ -3,11 +3,10 @@ from pathlib import Path
 import json
 
 import numpy as np
-import librosa
+import pretty_midi
 from tqdm import tqdm
 
 
-DIR_NAME_ARRAY = "array/"
 DIR_NAME_SYNCED = "synced/"
 DIR_NAME_PIANO = "piano/"
 
@@ -15,187 +14,174 @@ with open("models/config.json", "r") as f:
     CONFIG = json.load(f)["data"]
 PITCH_MIN = CONFIG["midi"]["note_min"]
 PITCH_MAX = CONFIG["midi"]["note_max"]
+NUM_PITCH = CONFIG["midi"]["num_note"]
 N_VELOCITY = CONFIG["midi"]["num_velocity"]
 SR = CONFIG["feature"]["sr"]
 HOP_LENGTH = CONFIG["feature"]["hop_sample"]
+N_FRAMES = CONFIG["input"]["num_frame"]
 
 PATH_STYLES = "data/.styles.json"
 PATH_STYLE_VECTOR = "data/style_vector.json"
 
+BIN_VEL = np.arange(1, N_VELOCITY)
+BIN_PITCH = np.arange(PITCH_MIN, PITCH_MAX + 1)
+
 
 def main(args):
     dir_dataset = Path(args.path_dataset)
-    dir_input = dir_dataset / DIR_NAME_ARRAY
     dir_synced = dir_dataset / DIR_NAME_SYNCED
 
-    songs = list(dir_input.glob("*/"))
-    songs = sorted(songs)
+    pianos = list(dir_synced.glob("*/piano/*.mid"))
+    pianos = sorted(pianos)
 
     if (not args.overwrite) and Path(PATH_STYLES).exists():
         with open(PATH_STYLES, "r") as f:
-            styles = json.load(f)
+            raw_styles = json.load(f)
     else:
-        styles = extract_styles(songs, dir_synced)
+        raw_styles, ignore_ids = extract_raw_styles(pianos, min_notes=args.min_notes)
         with open(PATH_STYLES, "w") as f:
-            json.dump(styles, f)
+            json.dump(raw_styles, f)
 
-    style_vector, params = extract_style_vectors(styles)
+    params = estimate_params(raw_styles, ignore_ids)
+    style_vectors = create_style_vectors(raw_styles, params)
     out = {
-        "style_vector": style_vector,
+        "style_vector": style_vectors,
         "params": params
     }
     with open(PATH_STYLE_VECTOR, "w") as f:
         json.dump(out, f)
 
 
-def _load_midi(path):
-    midi = np.load(path)
-    onset = midi["onset"]
-    mpe = midi["mpe"]
-    velocity = midi["velocity"]
-    velocity[onset == 0] = 0
-    return mpe, velocity
+def extract_raw_style(path, min_notes=0):
+    midi = pretty_midi.PrettyMIDI(str(path))
+    piano_roll = midi.get_piano_roll(int(SR / HOP_LENGTH))
+    piano_roll = piano_roll[PITCH_MIN:PITCH_MAX + 1]
+    n_frames_midi = piano_roll.shape[1]
+    onset = np.diff(piano_roll, axis=1) > 0
+    status = 0
+    if not onset.any():
+        return 2, None
+    elif onset.sum() < min_notes:
+        status = 1
+    onset = np.pad(onset, ((0, 0), (1, 0)))
+    velocity = piano_roll[onset]
+    dist_vel = [int((velocity == v).sum()) for v in BIN_VEL]
+    dist_pitch = [int((np.diff(onset[p]) > 0).sum()) for p in range(NUM_PITCH)]
 
-def _get_style(midi, bpm):
-    mpe, velocity = midi
-    length = len(mpe)
-    n_frames_measure = 4 * int(60 / bpm * SR / HOP_LENGTH)
+    onset_rates = []
+    hold_rates = []
+    for i in range(0, n_frames_midi, N_FRAMES):
+        seg_onset = onset[:, i:i + N_FRAMES]
+        seg_hold = piano_roll[:, i:i + N_FRAMES].astype(bool)
+        onset_rates.append(seg_onset.mean())
+        hold_rates.append(seg_hold.astype(bool).mean())
 
-    velocities = velocity[velocity.astype(bool)]
-    velocities = {v: int((velocities == v).sum()) for v in range(N_VELOCITY)}
-
-    pitches = {}
-    for pitch, seq in enumerate(mpe.T):
-        pitches[pitch] = int(seq.sum())
-
-    onset_ratio = []
-    on_ratio = []
-    for i in range(0, length, n_frames_measure):
-        seg_mpe = mpe[i:i + n_frames_measure]
-        seg_vel = velocity[i:i + n_frames_measure]
-        if seg_vel.any():
-            on_ratio.append(seg_mpe.mean())
-            onset_ratio.append(seg_vel.astype(bool).mean())
-
-    return velocities, pitches, onset_ratio, on_ratio
-
-def extract_styles(songs, dir_synced):
-    styles = {}
-    for song in tqdm(songs, desc="Extracting styles"):
-        orig, = list((dir_synced / song.stem).glob("*.wav"))
-        y, sr = librosa.load(str(orig))
-        bpm, _ = librosa.beat.beat_track(y=y, sr=sr)
-        pianos = list((song / DIR_NAME_PIANO).glob("*.npz"))
-        pianos = sorted(pianos)
-
-        for piano in pianos:
-            midi = _load_midi(piano)
-            velocities, pitches, onset_ratio, on_ratio = _get_style(midi, bpm[0])
-            styles[piano.stem] = {
-                "velocities": velocities,
-                "pitches": pitches,
-                "onset_ratio": onset_ratio,
-                "on_ratio": on_ratio
-            }
-        with open(PATH_STYLES, "w") as f:
-            json.dump(styles, f, indent=2)
-    return styles
+    return status, (dist_vel, dist_pitch, onset_rates, hold_rates)
 
 
-def _dict_update(d1, d2):
-    for k, v in d2.items():
-        if k in d1:
-            d1[k] += v
-        else:
-            d1[k] = v
-    return d1
+def extract_raw_styles(pianos, min_notes=0):
+    raw_styles = {}
+    ignore_ids = []
+    for piano in tqdm(pianos, desc="Extracting raw styles"):
+        status, raw_style = extract_raw_style(piano, min_notes)
+        if status == 1:
+            ignore_ids.append(piano.stem)
+        elif status == 2:
+            continue
 
-def _get_params(data):
-    if isinstance(data, dict):
-        sum_val = 0
-        sum_div = 0
-        w = 0
-        for k, v in data.items():
-            sum_val += int(k) * v
-            w += v
-        mean = sum_val / w
-        for k, v in data.items():
-            sum_div += v * (int(k) - mean) ** 2
-        std = np.sqrt(sum_div / w)
-    else:
-        mean = np.mean(data)
-        std = np.std(data)
-    return mean, std
+        raw_styles[piano.stem] = {
+            "dist_vel": raw_style[0],
+            "dist_pitch": raw_style[1],
+            "onset_rates": raw_style[2],
+            "hold_rates": raw_style[3]
+        }
+    return raw_styles, ignore_ids
 
-def _normalize(data, mean, std):
-    return (data - mean) / std
 
-def _get_dist(data, n=8):
-    digits = np.digitize(data, np.linspace(-2, 2, n - 1))
-    dist = np.array([(digits == i).sum() for i in range(n)])
-    dist = dist / dist.sum()
-    return dist
-
-def _to_list(data):
-    l = []
-    for k, v in data.items():
-        l += [int(k)] * v
-    return l
-
-def extract_style_vectors(styles):
-    all_velocities = {}
-    all_pitches = {}
-    all_onset_ratio = []
-    all_on_ratio = []
-    for style in styles.values():
-        all_velocities = _dict_update(all_velocities, style["velocities"])
-        all_pitches = _dict_update(all_pitches, style["pitches"])
-        all_onset_ratio += style["onset_ratio"]
-        all_on_ratio += style["on_ratio"]
-
-    mean_vel, std_vel = _get_params(all_velocities)
-    mean_pitch, std_pitch = _get_params(all_pitches)
-    mean_onset_ratio, std_onset_ratio = _get_params(all_onset_ratio)
-    mean_on_ratio, std_on_ratio = _get_params(all_on_ratio)
-
+def estimate_params(raw_styles, ignore_ids):
+    sum_dist_vel = np.zeros(N_VELOCITY - 1)
+    sum_dist_pitch = np.zeros(NUM_PITCH)
+    all_onset_rate = []
+    all_hold_rate = []
+    for pid, style in raw_styles.items():
+        if pid in ignore_ids:
+            continue
+        sum_dist_vel += style["dist_vel"]
+        sum_dist_pitch += style["dist_pitch"]
+        all_onset_rate += style["onset_rates"]
+        all_hold_rate += style["hold_rates"]
+    mean_vel = np.average(BIN_VEL, weights=sum_dist_vel)
+    mean_pitch = np.average(BIN_PITCH, weights=sum_dist_pitch)
+    mean_onset_rate = np.mean(all_onset_rate)
+    mean_hold_rate = np.mean(all_hold_rate)
+    std_vel = np.sqrt(np.average((BIN_VEL - mean_vel) ** 2, weights=sum_dist_vel))
+    std_pitch = np.sqrt(np.average((BIN_PITCH - mean_pitch) ** 2, weights=sum_dist_pitch))
+    std_onset_rate = np.std(all_onset_rate)
+    std_hold_rate = np.std(all_hold_rate)
     params = {
         "mean_vel": mean_vel,
-        "std_vel": std_vel,
         "mean_pitch": mean_pitch,
+        "mean_onset_rate": mean_onset_rate,
+        "mean_hold_rate": mean_hold_rate,
+        "std_vel": std_vel,
         "std_pitch": std_pitch,
-        "mean_onset_ratio": mean_onset_ratio,
-        "std_onset_ratio": std_onset_ratio,
-        "mean_on_ratio": mean_on_ratio,
-        "std_on_ratio": std_on_ratio
+        "std_onset_rate": std_onset_rate,
+        "std_hold_rate": std_hold_rate
     }
+    return params
 
-    style_vectors = {}
-    for id_piano, style in tqdm(styles.items(), desc="Extracting style vectors"):
-        velocities = np.array(_to_list(style["velocities"]))
-        pitches = np.array(_to_list(style["pitches"]))
-        onset_ratio = np.array(style["onset_ratio"])
-        on_ratio = np.array(style["on_ratio"])
 
-        velocities = _normalize(velocities, mean_vel, std_vel)
-        pitches = _normalize(pitches, mean_pitch, std_pitch)
-        onset_ratio = _normalize(onset_ratio, mean_onset_ratio, std_onset_ratio)
-        on_ratio = _normalize(on_ratio, mean_on_ratio, std_on_ratio)
+BIN_DIST = np.array([-np.inf, -2, -4/3, -2/3, 0, 2/3, 4/3, 2, np.inf])
+def create_style_vectors(raw_styles, params):
+    mean_vel = params["mean_vel"]
+    mean_pitch = params["mean_pitch"]
+    mean_onset_rate = params["mean_onset_rate"]
+    mean_hold_rate = params["mean_hold_rate"]
+    std_vel = params["std_vel"]
+    std_pitch = params["std_pitch"]
+    std_onset_rate = params["std_onset_rate"]
+    std_hold_rate = params["std_hold_rate"]
+    bin_vel_norm = (BIN_VEL - mean_vel) / std_vel
+    bin_pitch_norm = (BIN_PITCH - mean_pitch) / std_pitch
 
-        dist_vel = _get_dist(velocities)
-        dist_pitch = _get_dist(pitches)
-        dist_onset_ratio = _get_dist(onset_ratio)
-        dist_on_ratio = _get_dist(on_ratio)
+    styles = {}
+    for id_piano, style in tqdm(raw_styles.items(), desc="Normalize style vectors"):
+        dist_vel = style["dist_vel"]
+        dist_pitch = style["dist_pitch"]
+        onset_rates = style["onset_rates"]
+        hold_rates = style["hold_rates"]
 
-        style_vectors[id_piano] = np.concatenate(
-            [dist_vel, dist_pitch, dist_onset_ratio, dist_on_ratio]
-        ).tolist()
+        # To list
+        vels = sum([[v] * n for v, n in zip(bin_vel_norm, dist_vel)], [])
+        pitches = sum([[p] * n for p, n in zip(bin_pitch_norm, dist_pitch)], [])
+        vels = np.array(vels)
+        pitches = np.array(pitches)
 
-    return style_vectors, params
+        # Normalize
+        vels_norm = (vels - mean_vel) / std_vel
+        pitches_norm = (pitches - mean_pitch) / std_pitch
+        onset_rates_norm = (onset_rates - mean_onset_rate) / std_onset_rate
+        hold_rates_norm = (hold_rates - mean_hold_rate) / std_hold_rate
+
+        # Digitize
+        dist_vel, _ = np.histogram(vels_norm, bins=BIN_DIST, density=True)
+        dist_pitch, _ = np.histogram(pitches_norm, bins=BIN_DIST, density=True)
+        dist_onset_rate, _ = np.histogram(onset_rates_norm, bins=BIN_DIST, density=True)
+        dist_hold_rate, _ = np.histogram(hold_rates_norm, bins=BIN_DIST, density=True)
+
+        # Concatenate
+        style_vector = np.concatenate([
+            dist_vel, dist_pitch, dist_onset_rate, dist_hold_rate
+        ]).tolist()
+        styles[id_piano] = style_vector
+
+    return styles
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--min_notes", type=int, default=1000)
     args = parser.parse_args()
     main(args)
