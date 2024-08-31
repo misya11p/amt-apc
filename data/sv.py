@@ -73,8 +73,13 @@ def extract_raw_style(path, min_notes=0):
     for i in range(0, n_frames_midi, N_FRAMES):
         seg_onset = onset[:, i:i + N_FRAMES]
         seg_hold = piano_roll[:, i:i + N_FRAMES].astype(bool)
-        onset_rates.append(seg_onset.mean())
-        hold_rates.append(seg_hold.astype(bool).mean())
+        onset_rate = seg_onset.sum() / N_FRAMES
+        if onset_rate:
+            hold_rate = seg_hold.astype(bool).sum() / seg_onset.sum()
+        else:
+            hold_rate = 0
+        onset_rates.append(onset_rate)
+        hold_rates.append(hold_rate)
 
     return status, (dist_vel, dist_pitch, onset_rates, hold_rates)
 
@@ -131,7 +136,7 @@ def estimate_params(raw_styles, ignore_ids):
     return params
 
 
-BIN_DIST = np.array([-np.inf, -2, -4/3, -2/3, 0, 2/3, 4/3, 2, np.inf])
+BIN_DIST = np.array([-2, -4/3, -2/3, 0, 2/3, 4/3, 2])
 def create_style_vectors(raw_styles, params):
     mean_vel = params["mean_vel"]
     mean_pitch = params["mean_pitch"]
@@ -141,8 +146,6 @@ def create_style_vectors(raw_styles, params):
     std_pitch = params["std_pitch"]
     std_onset_rate = params["std_onset_rate"]
     std_hold_rate = params["std_hold_rate"]
-    bin_vel_norm = (BIN_VEL - mean_vel) / std_vel
-    bin_pitch_norm = (BIN_PITCH - mean_pitch) / std_pitch
 
     styles = {}
     for id_piano, style in tqdm(raw_styles.items(), desc="Normalize style vectors"):
@@ -152,8 +155,8 @@ def create_style_vectors(raw_styles, params):
         hold_rates = style["hold_rates"]
 
         # To list
-        vels = sum([[v] * n for v, n in zip(bin_vel_norm, dist_vel)], [])
-        pitches = sum([[p] * n for p, n in zip(bin_pitch_norm, dist_pitch)], [])
+        vels = sum([[v] * n for v, n in zip(BIN_VEL, dist_vel)], [])
+        pitches = sum([[p] * n for p, n in zip(BIN_PITCH, dist_pitch)], [])
         vels = np.array(vels)
         pitches = np.array(pitches)
 
@@ -164,10 +167,10 @@ def create_style_vectors(raw_styles, params):
         hold_rates_norm = (hold_rates - mean_hold_rate) / std_hold_rate
 
         # Digitize
-        dist_vel, _ = np.histogram(vels_norm, bins=BIN_DIST, density=True)
-        dist_pitch, _ = np.histogram(pitches_norm, bins=BIN_DIST, density=True)
-        dist_onset_rate, _ = np.histogram(onset_rates_norm, bins=BIN_DIST, density=True)
-        dist_hold_rate, _ = np.histogram(hold_rates_norm, bins=BIN_DIST, density=True)
+        dist_vel = get_distribution(vels_norm)
+        dist_pitch = get_distribution(pitches_norm)
+        dist_onset_rate = get_distribution(onset_rates_norm)
+        dist_hold_rate = get_distribution(hold_rates_norm)
 
         # Concatenate
         style_vector = np.concatenate([
@@ -176,6 +179,13 @@ def create_style_vectors(raw_styles, params):
         styles[id_piano] = style_vector
 
     return styles
+
+def get_distribution(data):
+    digit = np.digitize(data, BIN_DIST)
+    dist = [(digit == v).sum() for v in range(len(BIN_DIST))]
+    dist = np.array(dist)
+    dist = dist / dist.sum()
+    return dist
 
 
 if __name__ == "__main__":
