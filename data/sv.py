@@ -163,7 +163,7 @@ def create_style_vectors(raw_styles, params):
 
 def get_distribution(data):
     digit = np.digitize(data, BIN_DIST)
-    dist = [(digit == v).sum() for v in range(len(BIN_DIST))]
+    dist = [(digit == v).sum() for v in range(len(BIN_DIST) + 1)]
     dist = np.array(dist)
     dist = dist / dist.sum()
     return dist
