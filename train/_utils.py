@@ -56,12 +56,12 @@ def loss_fn(pred, label, beta=0.75):
         )
 
     # select
-    onset_idx = select(onset_label, prob=0.01)
+    onset_idx = select(onset_label, prob=0.07)
     onset_pred_f = onset_pred_f[onset_idx]
     onset_pred_t = onset_pred_t[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    mpe_idx = select(mpe_label, prob=0.3)
+    mpe_idx = select(mpe_label, prob=0.2)
     mpe_pred_f = mpe_pred_f[mpe_idx]
     mpe_pred_t = mpe_pred_t[mpe_idx]
     mpe_label = mpe_label[mpe_idx]
