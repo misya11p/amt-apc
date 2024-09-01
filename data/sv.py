@@ -37,15 +37,22 @@ def main(args):
     if (not args.overwrite) and Path(PATH_STYLES).exists():
         with open(PATH_STYLES, "r") as f:
             raw_styles = json.load(f)
+            raw_styles = raw_styles["raw_styles"]
+            params = raw_styles["params"]
     else:
         raw_styles, ignore_ids = extract_raw_styles(pianos, min_notes=args.min_notes)
+        params = estimate_params(raw_styles, ignore_ids)
+        out = {
+            "raw_styles": raw_styles,
+            "params": params
+        }
         with open(PATH_STYLES, "w") as f:
-            json.dump(raw_styles, f)
+            json.dump(out, f)
 
-    params = estimate_params(raw_styles, ignore_ids)
-    style_vectors = create_style_vectors(raw_styles, params)
+    style_vectors, style_features = create_style_vectors(raw_styles, params)
     out = {
         "style_vector": style_vectors,
+        "style_feature": style_features,
         "params": params
     }
     with open(PATH_STYLE_VECTOR, "w") as f:
@@ -131,7 +138,8 @@ def create_style_vectors(raw_styles, params):
     std_pitch = params["std_pitch"]
     std_onset_rate = params["std_onset_rate"]
 
-    styles = {}
+    style_vectors = {}
+    style_features = {}
     for id_piano, style in tqdm(raw_styles.items(), desc="Normalize style vectors"):
         dist_vel = style["dist_vel"]
         dist_pitch = style["dist_pitch"]
@@ -157,9 +165,13 @@ def create_style_vectors(raw_styles, params):
         style_vector = np.concatenate([
             dist_vel, dist_pitch, dist_onset_rate
         ]).tolist()
-        styles[id_piano] = style_vector
+        style_feature = [
+            vels_norm.mean(), pitches_norm.std(), onset_rates_norm.mean()
+        ]
+        style_vectors[id_piano] = style_vector
+        style_features[id_piano] = style_feature
 
-    return styles
+    return style_vectors, style_features
 
 def get_distribution(data):
     digit = np.digitize(data, BIN_DIST)
