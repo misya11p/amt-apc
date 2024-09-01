@@ -10,8 +10,6 @@ from tqdm import tqdm
 from models import Pipeline
 
 
-DIR_NAME_SONG = "songs"
-DIR_NAME_COVER_MIDI = "cover_midi"
 DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 with open("models/config.json", "r") as f:
     CONFIG = json.load(f)
@@ -20,9 +18,8 @@ SV_DIM = CONFIG["model"]["sv_dim"]
 
 
 def main(args):
-    dir_data = Path(args.dir_data)
-    dir_input = dir_data / DIR_NAME_SONG
-    dir_output = dir_data / DIR_NAME_COVER_MIDI
+    dir_input = Path(args.dir_original)
+    dir_output = Path(args.dir_output)
     dir_output.mkdir(exist_ok=True)
     with open(args.path_params, "r") as f:
         params = json.load(f)
@@ -45,17 +42,17 @@ def main(args):
             thred_onset=params["threshold"]["onset"],
             thred_offset=params["threshold"]["offset"],
             thred_mpe=params["threshold"]["mpe"],
-            min_length=args.min_length,
+            min_length=params["min_duration"],
         )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--dir_data", type=str, default="./eval/data/")
+    parser.add_argument("-i", "--dir_original", type=str, default="./eval/data/songs")
+    parser.add_argument("-o", "--dir_output", type=str, default="./eval/data/cover_midi")
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--path_params", type=str, default="./eval/params.json")
     parser.add_argument("--path_style_vector", type=str, default="./data/style_vector.json")
-    parser.add_argument("--min_length", type=float, default=0.08)
     args = parser.parse_args()
     main(args)

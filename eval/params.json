@@ -3,5 +3,6 @@
     "onset": 0.5,
     "offset": 1.0,
     "mpe": 0.5
-  }
+  },
+  "min_duration": 0.08
 }
