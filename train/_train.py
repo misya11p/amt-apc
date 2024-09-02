@@ -61,17 +61,18 @@ def train(
 
 
 class Trainer:
-    def __init__(self, dataset, n_gpus, batch_size, n_epochs, with_sv):
+    def __init__(self, dataset, n_gpus, batch_size, n_epochs, with_sv, no_load):
         self.dataset = dataset
         self.n_gpus = n_gpus
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.ddp = (n_gpus > 1)
         self.with_sv = with_sv
+        self.no_load = no_load
 
     def setup(self, device):
         sv_dim = SV_DIM if self.with_sv else 0
-        model = load_model(device=device, amt=True, sv_dim=sv_dim)
+        model = load_model(device=device, amt=True, sv_dim=sv_dim, no_load=self.no_load)
         model = model.to(device)
         if self.ddp:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)

@@ -24,6 +24,7 @@ def main(args):
         batch_size=args.batch_size,
         n_epochs=args.n_epochs,
         with_sv=not args.no_sv,
+        no_load=args.no_load,
     )
     if args.n_gpus >= 2:
         mp.spawn(
@@ -44,6 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--no_sv", action="store_true")
+    parser.add_argument("--no_load", action="store_true")
     parser.add_argument("--use", type=str, default="train") # "train" or "test" or "all"
     args = parser.parse_args()
     main(args)
