@@ -63,7 +63,7 @@ class AMT():
         return a_feature
 
 
-    def transcript(self, a_feature, mode='combination', ablation_flag=False):
+    def transcript(self, a_feature, sv=None, mode='combination', ablation_flag=False): # Modified from the original (this line)
         # a_feature: [num_frame, n_mels]
         a_feature = np.array(a_feature, dtype=np.float32)
 
@@ -91,9 +91,9 @@ class AMT():
             with torch.no_grad():
                 if mode == 'combination':
                     if ablation_flag is True:
-                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec)
+                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, sv) # Modified from the original (this line)
                     else:
-                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, attention, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec)
+                        output_onset_A, output_offset_A, output_mpe_A, output_velocity_A, attention, output_onset_B, output_offset_B, output_mpe_B, output_velocity_B = self.model(input_spec, sv) # Modified from the original (this line)
                     # output_onset: [batch_size, n_frame, n_note]
                     # output_offset: [batch_size, n_frame, n_note]
                     # output_mpe: [batch_size, n_frame, n_note]
@@ -344,10 +344,12 @@ class AMT():
         return a_note
 
 
-    def note2midi(self, a_note, f_midi):
+    def note2midi(self, a_note, f_midi, min_length=0.):
         midi = pretty_midi.PrettyMIDI()
         instrument = pretty_midi.Instrument(program=0)
         for note in a_note:
+            if note['offset'] - note['onset'] < min_length:
+                continue
             instrument.notes.append(pretty_midi.Note(velocity=note['velocity'], pitch=note['pitch'], start=note['onset'], end=note['offset']))
         midi.instruments.append(instrument)
         midi.write(f_midi)
