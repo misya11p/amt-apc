@@ -109,8 +109,8 @@ import time
 import json
 import functools
 
-root = Path(__file__).resolve().parent.parent
-sys.path.append(str(root))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import librosa
 import soundfile as sf
@@ -118,12 +118,12 @@ import soundfile as sf
 from utils import config
 
 
-DIR_DATASET = root / config.dataset.dir
+DIR_DATASET = ROOT / config.dataset.dir
 DIR_RAW = DIR_DATASET / "raw/"
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
-PATH_INFO = root / "utils/info.json"
+PATH_INFO = ROOT / "utils/info.json"
 
 print = functools.partial(print, flush=True)
 

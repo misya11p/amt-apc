@@ -2,8 +2,8 @@ import argparse
 from pathlib import Path
 import sys
 
-root = Path(__file__).resolve().parent.parent
-sys.path.append(str(root))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import torch
 from tqdm import tqdm
@@ -12,7 +12,7 @@ from models import Pipeline
 from utils import config
 
 
-DIR_DATASET = root / config.dataset.dir
+DIR_DATASET = ROOT / config.dataset.dir
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")

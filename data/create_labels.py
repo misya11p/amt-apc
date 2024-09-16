@@ -4,8 +4,8 @@ import sys
 import time
 import functools
 
-root = Path(__file__).resolve().parent.parent
-sys.path.append(str(root))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from data._utils_midi import midi2note, note2label
 from utils import config
 
 
-DIR_DATASET = root / config.dataset.dir
+DIR_DATASET = ROOT / config.dataset.dir
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_ARRAY = DIR_DATASET / "array/"
 DIR_ARRAY.mkdir(exist_ok=True)
@@ -82,7 +82,7 @@ def get_label(path_midi: Path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--overwrite", action="store_true")
+    parser = argparse.ArgumentParser("Create labels for the dataset.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)

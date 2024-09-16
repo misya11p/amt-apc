@@ -2,8 +2,8 @@ from pathlib import Path
 import sys
 from collections import OrderedDict
 
-root = Path(__file__).resolve().parent.parent
-sys.path.append(str(root))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import torch
 import torch.nn as nn
@@ -182,10 +182,10 @@ def load_model(
         Spec2MIDI: The model.
     """
     if amt:
-        path_model = path_model or str(root / config.default.amt)
+        path_model = path_model or str(ROOT / config.default.amt)
         with_sv = False
     else:
-        path_model = path_model or str(root / config.default.apc)
+        path_model = path_model or str(ROOT / config.default.apc)
 
     encoder = Encoder(
         n_margin=config.data.input.margin_b,
