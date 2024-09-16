@@ -110,6 +110,7 @@ class Pipeline(AMT):
         self.note2midi(note, path_output, min_length)
 
 
+# 未着手, todo
 class Spec2MIDI(BaseSpec2MIDI):
     def __init__(self, encoder, decoder, sv_dim: int = 0):
         super().__init__(encoder, decoder)
@@ -181,10 +182,10 @@ def load_model(
         Spec2MIDI: The model.
     """
     if amt:
-        path_model = path_model or str(root / config.model.default.amt)
+        path_model = path_model or str(root / config.default.amt)
         with_sv = False
     else:
-        path_model = path_model or str(root / config.model.default.apc)
+        path_model = path_model or str(root / config.default.apc)
 
     encoder = Encoder(
         n_margin=config.data.input.margin_b,

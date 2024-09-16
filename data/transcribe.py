@@ -22,7 +22,7 @@ def main(args):
     piano_wavs = list(DIR_SYNCED.glob("*/piano/*.wav"))
     piano_wavs = sorted(piano_wavs)
     device = torch.device(args.device) if args.device else DEVICE_DEFAULT
-    amt = Pipeline(device=device, amt=True, path_model=args.path_amt)
+    amt = Pipeline(path_model=args.path_amt, device=device, amt=True)
 
     for piano_wav in tqdm(piano_wavs):
         piano_midi = piano_wav.with_suffix(".mid")
@@ -34,7 +34,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Transcribe piano audio to MIDI.")
     parser.add_argument("--device", type=str, default=None, help="Device to use. Defaults to auto (CUDA if available else CPU).")
-    parser.add_argument("--path_amt", type=str, default=None, help="Path to the AMT model. Defaults to the model in config.")
+    parser.add_argument("--path_amt", type=str, default=None, help="Path to the AMT model. Defaults to None (use the default model).")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing MIDI files.")
     args = parser.parse_args()
     main(args)

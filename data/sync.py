@@ -162,7 +162,7 @@ def _sync_song(
     """
     dir_output_song = dir_output / dir_song.name
     info = {}
-    start_time = time.time()
+    time_start = time.time()
     orig = next(dir_song.glob("*.wav"))
     orig_new = dir_output_song / orig.name
     flag_load_orig = False
@@ -191,7 +191,7 @@ def _sync_song(
         }
         print(".", end="")
 
-    print(f" Done ({time.time() - start_time:.2f}s)")
+    print(f" Done ({time.time() - time_start:.2f}s)")
     return info
 
 
