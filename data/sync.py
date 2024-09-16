@@ -123,7 +123,7 @@ DIR_RAW = DIR_DATASET / "raw/"
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
-PATH_INFO = ROOT / "utils/info.json"
+PATH_INFO = ROOT / config.path.info
 
 print = functools.partial(print, flush=True)
 

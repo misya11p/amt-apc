@@ -182,10 +182,10 @@ def load_model(
         Spec2MIDI: The model.
     """
     if amt:
-        path_model = path_model or str(ROOT / config.default.amt)
+        path_model = path_model or str(ROOT / config.path.amt)
         with_sv = False
     else:
-        path_model = path_model or str(ROOT / config.default.apc)
+        path_model = path_model or str(ROOT / config.path.apc)
 
     encoder = Encoder(
         n_margin=config.data.input.margin_b,
