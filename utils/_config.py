@@ -15,8 +15,8 @@ class Config(dict):
             return value
 
 
-dir_this = Path(__file__).parent.parent
-file_config = dir_this / "config.json"
+root = Path(__file__).parent.parent
+file_config = root / "config.json"
 with open(file_config, "r") as f:
     config_raw = json.load(f)
 config = Config(config_raw)
