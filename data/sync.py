@@ -106,6 +106,8 @@ from pathlib import Path
 import sys
 import shutil
 import time
+import json
+import functools
 
 root = Path(__file__).resolve().parent.parent
 sys.path.append(str(root))
@@ -121,11 +123,27 @@ DIR_RAW = DIR_DATASET / "raw/"
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
+PATH_INFO = root / "utils/info.json"
+
+print = functools.partial(print, flush=True)
 
 
 def main(args):
-    for song in DIR_RAW.glob("*/"):
-        _sync_song(song, DIR_SYNCED, args.overwrite)
+    if not args.overwrite and PATH_INFO.exists():
+        with open(PATH_INFO, "r") as f:
+            info = json.load(f)
+    else:
+        info = {}
+
+    songs = DIR_RAW.glob("*/")
+    songs = sorted(songs)
+    n_songs = len(songs)
+    for n, song in enumerate(songs, 1):
+        print(f"{n}/{n_songs}: {song.name}", end=" ")
+        info_songs = _sync_song(song, DIR_SYNCED, args.overwrite)
+        info.update(info_songs)
+        with open(PATH_INFO, "w") as f:
+            json.dump(info, f, indent=2, ensure_ascii=False)
 
 
 def _sync_song(
@@ -143,7 +161,7 @@ def _sync_song(
         overwrite (bool): Overwrite existing files.
     """
     dir_output_song = dir_output / dir_song.name
-
+    info = {}
     start_time = time.time()
     orig = next(dir_song.glob("*.wav"))
     orig_new = dir_output_song / orig.name
@@ -157,7 +175,7 @@ def _sync_song(
 
     dir_output_song_piano = dir_output_song / DIR_NAME_PIANO
     dir_output_song_piano.mkdir(exist_ok=True)
-    for i, piano in enumerate((dir_song / DIR_NAME_PIANO).glob("*.wav"), 1):
+    for piano in (dir_song / DIR_NAME_PIANO).glob("*.wav"):
         piano_new = dir_output_song_piano / piano.name
         if overwrite or (not piano_new.exists()):
             if not flag_load_orig:
@@ -167,8 +185,14 @@ def _sync_song(
             y_piano_synced = sync_audio(y_piano, y_orig, sr)
             sf.write(str(piano_new), y_piano_synced, sr)
 
-    running_time = time.strftime("%Mm%Ss", time.gmtime(time.time() - start_time))
-    print(f"Synced ({i} pianos) '{dir_song.name}' in {running_time}.")
+        info[piano.stem] = {
+            "original": orig.stem,
+            "title": orig.parent.stem,
+        }
+        print(".", end="")
+
+    print(f" Done ({time.time() - start_time:.2f}s)")
+    return info
 
 
 if __name__ == "__main__":
