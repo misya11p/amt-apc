@@ -1,0 +1,53 @@
+{
+  "data": {
+    "feature": {
+      "sr": 16000,
+      "hop_sample": 256,
+      "mel_bins": 256,
+      "n_bins": 256,
+      "fft_bins": 2048,
+      "window_length": 2048,
+      "log_offset": 1e-08,
+      "window": "hann",
+      "pad_mode": "constant"
+    },
+    "input": {
+      "margin_b": 32,
+      "margin_f": 32,
+      "num_frame": 512,
+      "min_value": -18.0
+    },
+    "midi": {
+      "note_min": 21,
+      "note_max": 108,
+      "num_note": 88,
+      "num_velocity": 128
+    }
+  },
+  "model": {
+    "cnn": {
+      "channel": 4,
+      "kernel": 5
+    },
+    "dropout": 0.1,
+    "transformer": {
+      "decoder": {
+        "n_head": 4,
+        "n_layer": 3
+      },
+      "encoder": {
+        "n_head": 4,
+        "n_layer": 3
+      },
+      "hid_dim": 256,
+      "pf_dim": 512
+    },
+    "sv_dim": 24
+  },
+  "path": {
+    "amt": "models/params/amt.pth",
+    "apc": "models/params/apc.pth",
+    "dataset": "dataset/",
+    "info": "utils/info.json"
+  }
+}
