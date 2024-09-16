@@ -101,9 +101,9 @@ def sync_audio(
 # ------------------------------------------------------------------ <<<
 
 
+import argparse
 from pathlib import Path
 import sys
-import argparse
 import shutil
 import time
 
