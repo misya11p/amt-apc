@@ -30,10 +30,10 @@ def main(args):
 
     for n, song in enumerate(songs, 1):
         print(f"{n}/{n_songs}: {song.name}", end=" ")
-        _create_label(song, args.overwrite)
+        create_label(song, args.overwrite)
 
 
-def _create_label(song, overwrite):
+def create_label(song, overwrite):
     time_start = time.time()
     dir_song = DIR_ARRAY / song.name
     if (not overwrite) and dir_song.exists():

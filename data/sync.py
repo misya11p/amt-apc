@@ -140,13 +140,13 @@ def main(args):
     n_songs = len(songs)
     for n, song in enumerate(songs, 1):
         print(f"{n}/{n_songs}: {song.name}", end=" ")
-        info_songs = _sync_song(song, DIR_SYNCED, args.overwrite)
+        info_songs = sync_song(song, DIR_SYNCED, args.overwrite)
         info.update(info_songs)
         with open(PATH_INFO, "w") as f:
             json.dump(info, f, indent=2, ensure_ascii=False)
 
 
-def _sync_song(
+def sync_song(
     dir_song: str,
     dir_output: str,
     overwrite: bool = False
