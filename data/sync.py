@@ -4,6 +4,7 @@
 
 
 import os
+import warnings
 from contextlib import redirect_stdout
 
 import numpy as np
@@ -100,42 +101,38 @@ def sync_audio(
 # ------------------------------------------------------------------ <<<
 
 
-import argparse
 from pathlib import Path
+import sys
+import argparse
 import shutil
-import multiprocessing
-import warnings
 import time
+
+root = Path(__file__).resolve().parent.parent
+sys.path.append(str(root))
 
 import librosa
 import soundfile as sf
 
+from utils import config
 
-DIR_NAME_EXTRACTED = "extracted/"
-DIR_NAME_SYNCED = "synced/"
+
+DIR_DATASET = root / config.dataset.dir
+DIR_RAW = DIR_DATASET / "raw/"
+DIR_SYNCED = DIR_DATASET / "synced/"
+DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
 
 
 def main(args):
-    dir_dataset = Path(args.path_dataset)
-    dir_input = dir_dataset / DIR_NAME_EXTRACTED
-    dir_output = dir_dataset / DIR_NAME_SYNCED
-    dir_output.mkdir(exist_ok=True)
-
-    sync_args = []
-    for song in dir_input.glob("*/"):
-        sync_args.append((song, dir_output, args.sr, args.overwrite))
-
-    with multiprocessing.Pool(args.n_processes) as pool:
-        pool.starmap(_sync_song, sync_args)
+    for song in DIR_RAW.glob("*/"):
+        _sync_song(song, DIR_SYNCED, args.overwrite)
 
 
 def _sync_song(
     dir_song: str,
     dir_output: str,
-    sr: int | None = None,
     overwrite: bool = False
-):
+) -> None:
     """
     Synchronize the piano audio with the original audio in given song
     directory.
@@ -143,9 +140,7 @@ def _sync_song(
     Args:
         dir_song (str): Path to the song directory.
         dir_output (str): Path to the output directory.
-        sr (int | None, optional):
-            Sample rate of the audio files. If None, use the default
-            sample rate of librosa (22050). Defaults to None.
+        overwrite (bool): Overwrite existing files.
     """
     dir_output_song = dir_output / dir_song.name
 
@@ -156,7 +151,7 @@ def _sync_song(
 
     if overwrite or (not orig_new.exists()):
         dir_output_song.mkdir(exist_ok=True)
-        y_orig, sr = librosa.load(str(orig), sr=sr)
+        y_orig, sr = librosa.load(str(orig))
         flag_load_orig = True
         shutil.copy(orig, str(orig_new))
 
@@ -178,9 +173,6 @@ def _sync_song(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Synchronize piano audio with original audio.")
-    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
-    parser.add_argument("-n", "--n_processes", type=int, default=1, help="Number of processes to use. Defaults to 1.")
-    parser.add_argument("--sr", type=int, default=22050, help="Sample rate of the audio files. Defaults to 22050.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)
