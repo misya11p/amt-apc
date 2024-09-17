@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import json
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(ROOT))
 
 import numpy as np
@@ -16,8 +16,8 @@ from utils import config
 DIR_DATASET = ROOT / config.dataset.dir
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
-PATH_STYLES = "data/.styles.json"
-PATH_STYLE_VECTOR = "data/style_vector.json"
+PATH_TMP = ROOT / "data/sv/tmp.json"
+PATH_STYLE_VECTORS = ROOT / config.path.style_vectors
 PATH_INFO = ROOT / config.path.info
 
 PITCH_MIN = config.data.midi.note_min
@@ -35,29 +35,29 @@ def main(args):
     pianos = list(DIR_SYNCED.glob("*/piano/*.mid"))
     pianos = sorted(pianos)
 
-    if (not args.overwrite) and Path(PATH_STYLES).exists():
-        with open(PATH_STYLES, "r") as f:
+    if (not args.overwrite) and Path(PATH_TMP).exists():
+        with open(PATH_TMP, "r") as f:
             raw_styles = json.load(f)
             raw_styles = raw_styles["raw_styles"]
             params = raw_styles["params"]
     else:
-        raw_styles, ignore_ids = extract_raw_styles(pianos, min_notes=args.min_notes)
+        raw_styles, ignore_ids = extract_raw_styles(pianos, args.min_notes)
         params = estimate_params(raw_styles, ignore_ids)
         out = {
             "raw_styles": raw_styles,
             "params": params
         }
-        with open(PATH_STYLES, "w") as f:
+        with open(PATH_TMP, "w") as f:
             json.dump(out, f)
         update_info(ignore_ids)
 
     style_vectors, style_features = create_style_vectors(raw_styles, params)
     out = {
-        "style_vector": style_vectors,
-        "style_feature": style_features,
+        "style_vectors": style_vectors,
+        "style_features": style_features,
         "params": params
     }
-    with open(PATH_STYLE_VECTOR, "w") as f:
+    with open(PATH_STYLE_VECTORS, "w") as f:
         json.dump(out, f)
 
 
@@ -131,6 +131,7 @@ def estimate_params(raw_styles, ignore_ids):
 
 
 BIN_DIST = np.array([-2, -4/3, -2/3, 0, 2/3, 4/3, 2])
+
 def create_style_vectors(raw_styles, params):
     mean_vel = params["mean_vel"]
     mean_pitch = params["mean_pitch"]
@@ -196,7 +197,6 @@ def update_info(ignore_ids):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--min_notes", type=int, default=1000)
     args = parser.parse_args()
