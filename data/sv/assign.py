@@ -37,9 +37,9 @@ def main(args):
 
     if (not args.overwrite) and Path(PATH_TMP).exists():
         with open(PATH_TMP, "r") as f:
-            raw_styles = json.load(f)
-            raw_styles = raw_styles["raw_styles"]
-            params = raw_styles["params"]
+            tmp = json.load(f)
+            raw_styles = tmp["raw_styles"]
+            params = tmp["params"]
     else:
         raw_styles, ignore_ids = extract_raw_styles(pianos, args.min_notes)
         params = estimate_params(raw_styles, ignore_ids)
@@ -50,7 +50,6 @@ def main(args):
         with open(PATH_TMP, "w") as f:
             json.dump(out, f)
         update_info(ignore_ids)
-
     style_vectors, style_features = create_style_vectors(raw_styles, params)
     out = {
         "style_vectors": style_vectors,
@@ -152,6 +151,7 @@ def create_style_vectors(raw_styles, params):
         pitches = sum([[p] * n for p, n in zip(BIN_PITCH, dist_pitch)], [])
         vels = np.array(vels)
         pitches = np.array(pitches)
+        onset_rates = np.array(onset_rates)
 
         # Normalize
         vels_norm = (vels - mean_vel) / std_vel
@@ -192,7 +192,7 @@ def update_info(ignore_ids):
         else:
             info[pid]["include_dataset"] = True
     with open(PATH_INFO, "w") as f:
-        json.dump(info, f)
+        json.dump(info, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
