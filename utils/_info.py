@@ -38,6 +38,15 @@ class Info:
             with open(self.path, "w") as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
 
+    def piano2orig(self, id: str):
+        return self[id].original
+
+    def is_train(self, id: str):
+        return (self[id].split == "train")
+
+    def is_test(self, id: str):
+        return (self[id].split == "test")
+
 
 root = Path(__file__).resolve().parent.parent
 info = Info(root / config.path.info)
