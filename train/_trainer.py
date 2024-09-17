@@ -66,7 +66,16 @@ def train(
 
 
 class Trainer:
-    def __init__(self, dataset, n_gpus, with_sv, no_load, freq_save):
+    def __init__(
+        self,
+        path_model,
+        dataset,
+        n_gpus,
+        with_sv,
+        no_load,
+        freq_save
+    ):
+        self.path_model = path_model
         self.dataset = dataset
         self.n_gpus = n_gpus
         self.batch_size = config.train.batch_size
@@ -78,7 +87,11 @@ class Trainer:
 
     def setup(self, device):
         model = load_model(
-            device=device, amt=True, with_sv=self.with_sv, no_load=self.no_load
+            path_model=self.path_model,
+            device=device,
+            amt=True,
+            with_sv=self.with_sv,
+            no_load=self.no_load,
         )
         if self.ddp:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)

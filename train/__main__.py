@@ -17,6 +17,7 @@ def main(args):
 
     dataset = PianoCoversDataset(split=args.split)
     trainer = Trainer(
+        path_model=args.path_model,
         dataset=dataset,
         n_gpus=args.n_gpus,
         with_sv=not args.no_sv,
@@ -35,6 +36,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--path_model", type=str, default=None)
     parser.add_argument("--n_gpus", type=int, default=2)
     parser.add_argument("--split", type=str, default="train") # "train" or "test" or "all"
     parser.add_argument("--no_sv", action="store_true")
