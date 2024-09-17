@@ -48,6 +48,7 @@
     "amt": "models/params/amt.pth",
     "apc": "models/params/apc.pth",
     "dataset": "dataset/",
-    "info": "utils/info.json"
+    "info": "utils/info.json",
+    "style_vectors": "data/sv/style_vectors.json"
   }
 }
