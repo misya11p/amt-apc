@@ -29,10 +29,10 @@ class Sampler:
         self.params = style_vectors["params"]
 
     def __len__(self):
-        return len(self.svs)
+        return len(self.style_vectors)
 
     def __getitem__(self, key):
-        return self.svs[key]
+        return self.style_vectors[key]
 
     def get_sv(self, key_vel, key_pitch, key_onset):
         sv_vel = self[key_vel][0:8]

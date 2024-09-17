@@ -9,22 +9,12 @@ import torch
 from torch.utils.data import Dataset
 
 from utils import config, info
-from data import Sampler
+from data.sv.sampler import Sampler
 
 
-DIR_DATASET = ROOT / config.path.dataset
+DIR_DATASET = ROOT / config.path.dataset / "dataset/"
 DIR_SPEC = DIR_DATASET / "spec/"
 DIR_LABEL = DIR_DATASET / "label/"
-
-
-# with open("models/config.json", "r") as f:
-#     CONFIG = json.load(f)["data"]
-# with open("data/piano2orig.json", "r") as f:
-#     PIANO2ORIG = json.load(f)
-# with open("data/style_vector.json", "r") as f:
-#     STYLE_VECTOR = json.load(f)["style_vector"]
-# with open("data/train.txt", "r") as f:
-#     TRAIN_IDS = f.read().splitlines()
 
 
 class PianoCoversDataset(Dataset):
@@ -64,13 +54,12 @@ class PianoCoversDataset(Dataset):
         id_piano = "_".join(split[:-1])
         return id_piano, n_segment
 
-    @staticmethod
     def is_train(self, path: Path):
         return info.is_train(self.get_id_n(path)[0])
 
     def get_spec_sv(self, path: Path):
         id_piano, n_segment = self.get_id_n(path)
-        id_orig = info.piano2orig[id_piano]
+        id_orig = info.piano2orig(id_piano)
         fname_orig = f"{id_orig}_{n_segment}.npy"
         path_orig = DIR_SPEC / fname_orig
         spec = np.load(path_orig)

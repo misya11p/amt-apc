@@ -1,6 +1,9 @@
-import json
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+import sys
+from datetime import datetime
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import torch
 import torch.optim as optim
@@ -11,16 +14,13 @@ from torch.utils.data.distributed import DistributedSampler
 from dlprog import train_progress
 
 from models import load_model, save_model
-from _utils import loss_fn
+from train._loss import loss_fn
+from utils import config
 
 
-with open("models/config.json", "r") as f:
-    CONFIG = json.load(f)
-PATH_PC = CONFIG["default"]["pc"]
-SV_DIM = CONFIG["model"]["sv_dim"]
-DIR_CHECKPOINTS = Path("models/params/checkpoints/")
-FILE_NAME_LOG = "log.txt"
-JST = timezone(timedelta(hours=+9), "JST")
+DIR_CHECKPOINTS = ROOT / config.path.checkpoints
+NAME_FILE_LOG = "log.txt"
+PROG_LABELS = ["loss", "F1 avg", "F1 onset", "F1 frame", "F1 velocity"]
 
 
 def train(
@@ -36,16 +36,16 @@ def train(
 
     for i, batch in enumerate(dataloader, 1):
         optimizer.zero_grad()
-        spec, sv, onset, offset, mpe, velocity = batch
+        spec, sv, onset, offset, frame, velocity = batch
         spec = spec.to(device)
         sv = sv.to(device)
         onset = onset.to(device)
         offset = offset.to(device)
-        mpe = mpe.to(device)
+        frame = frame.to(device)
         velocity = velocity.to(device)
 
         pred = model(spec, sv)
-        label = onset, offset, mpe, velocity
+        label = onset, offset, frame, velocity
         loss, f1 = loss_fn(pred, label)
         loss.backward()
         optimizer.step()
@@ -54,41 +54,50 @@ def train(
             prog.update([loss.item(), sum(f1) / 3, *f1])
 
         if freq_save and (i % freq_save == 0):
-            save_model(model, PATH_PC)
-            loss, f1, f1_onset, f1_mpe, f1_velocity = prog.now_values()
+            save_model(model, config.path.apc)
+            loss, f1, f1_onset, f1_frame, f1_velocity = prog.now_values()
             with open(file_log, "a") as f:
-                f.write(f"{i}, loss: {loss}, f1: {f1}, f1_onset: {f1_onset}, f1_mpe: {f1_mpe}, f1_velocity: {f1_velocity}\n")
+                f.write(
+                    f"{i}iter, loss: {loss:.2f}, F1 avg: {f1:.2f}, "
+                    f"F1 onset: {f1_onset:.2f}, "
+                    f"F1 frame: {f1_frame:.2f}, "
+                    f"F1 velocity: {f1_velocity:.2f}\n"
+                )
 
 
 class Trainer:
-    def __init__(self, dataset, n_gpus, batch_size, n_epochs, with_sv, no_load):
+    def __init__(self, dataset, n_gpus, with_sv, no_load, freq_save):
         self.dataset = dataset
         self.n_gpus = n_gpus
-        self.batch_size = batch_size
-        self.n_epochs = n_epochs
-        self.ddp = (n_gpus > 1)
+        self.batch_size = config.train.batch_size
+        self.n_epochs = config.train.n_epochs
+        self.ddp = (n_gpus >= 2)
         self.with_sv = with_sv
         self.no_load = no_load
+        self.freq_save = freq_save
 
     def setup(self, device):
-        sv_dim = SV_DIM if self.with_sv else 0
-        model = load_model(device=device, amt=True, sv_dim=sv_dim, no_load=self.no_load)
-        model = model.to(device)
+        model = load_model(
+            device=device, amt=True, with_sv=self.with_sv, no_load=self.no_load
+        )
         if self.ddp:
             dist.init_process_group("nccl", rank=device, world_size=self.n_gpus)
             model = DDP(model, device_ids=[device])
         self.model = torch.compile(model)
-        self.optimizer = optim.Adam(model.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(model.parameters(), lr=config.train.lr)
         torch.set_float32_matmul_precision("high")
         if self.ddp:
             self.sampler = DistributedSampler(
-                self.dataset, num_replicas=self.n_gpus, rank=device, shuffle=True
+                self.dataset,
+                num_replicas=self.n_gpus,
+                rank=device,
+                shuffle=True,
             )
         else:
             self.sampler = None
         self.dataloader = DataLoader(
             self.dataset,
-            batch_size=self.batch_size,
+            batch_size=config.train.batch_size,
             sampler=self.sampler,
             shuffle=(self.sampler is None),
         )
@@ -98,11 +107,11 @@ class Trainer:
 
         is_parent = (not self.ddp) or (device == 0)
         if is_parent:
-            date = datetime.now(JST).strftime("%Y-%m%d-%H%M%S")
+            date = datetime.now().strftime("%Y-%m%d-%H%M%S")
             dir_checkpoint = DIR_CHECKPOINTS / date
-            dir_checkpoint.mkdir()
-            file_log = dir_checkpoint / FILE_NAME_LOG
-            prog = train_progress(width=20, label=["loss", "f1", "f1_onset", "f1_mpe", "f1_velocity"])
+            dir_checkpoint.mkdir(parents=True)
+            file_log = dir_checkpoint / NAME_FILE_LOG
+            prog = train_progress(width=20, label=PROG_LABELS)
             prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
         else:
             prog = None
@@ -116,18 +125,21 @@ class Trainer:
                 optimizer=self.optimizer,
                 dataloader=self.dataloader,
                 device=device,
-                freq_save=100 if is_parent else 0,
+                freq_save=self.freq_save if is_parent else 0,
                 prog=prog,
                 file_log=file_log,
             )
 
             if is_parent:
-                loss, f1, f1_onset, f1_mpe, f1_velocity = prog.values[-1]
+                loss, f1, f1_onset, f1_frame, f1_velocity = prog.values[-1]
                 path_pc_epoch = dir_checkpoint / f"{n + 1}.pth"
                 save_model(self.model, path_pc_epoch)
                 with open(file_log, "a") as f:
-                    time = datetime.now(JST).strftime("%Y/%m/%d %H:%M")
+                    time = datetime.now().strftime("%Y/%m/%d %H:%M")
                     f.write(
-                        f"{time}, epoch {n + 1} finished, loss: {loss}, f1: {f1}, "
-                        f"f1_onset: {f1_onset}, f1_mpe: {f1_mpe}, f1_velocity: {f1_velocity}\n"
+                        f"{time}, epoch {n + 1} Finished, "
+                        f"loss: {loss:.2f}, F1 avg: {f1:.2f}, "
+                        f"F1 onset: {f1_onset:.2f}, "
+                        f"F1 frame: {f1_frame:.2f}, "
+                        f"F1 velocity: {f1_velocity:.2f}\n"
                     )

@@ -44,11 +44,21 @@
     },
     "sv_dim": 24
   },
+  "train": {
+    "batch_size": 1,
+    "n_epochs": 5,
+    "lr": 0.0001,
+    "beta": 0.75,
+    "theta_onset": 0.07,
+    "theta_frame": 0.2,
+    "theta_velocity": 0.01
+  },
   "path": {
     "amt": "models/params/amt.pth",
     "apc": "models/params/apc.pth",
     "dataset": "dataset/",
     "info": "utils/info.json",
-    "style_vectors": "data/sv/style_vectors.json"
+    "style_vectors": "data/sv/style_vectors.json",
+    "checkpoints": "models/params/checkpoints/"
   }
 }
