@@ -196,8 +196,8 @@ def update_info(ignore_ids):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--min_notes", type=int, default=1000)
+    parser = argparse.ArgumentParser("Extract style vectors.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--min_notes", type=int, default=1000, help="The minimum number of notes, below which they will not be included in the training dataset. Defaults to 1000.")
     args = parser.parse_args()
     main(args)

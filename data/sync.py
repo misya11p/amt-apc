@@ -106,7 +106,6 @@ from pathlib import Path
 import sys
 import shutil
 import time
-import json
 import functools
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -115,7 +114,7 @@ sys.path.append(str(ROOT))
 import librosa
 import soundfile as sf
 
-from utils import config
+from utils import config, info
 
 
 DIR_DATASET = ROOT / config.path.dataset
@@ -123,27 +122,18 @@ DIR_RAW = DIR_DATASET / "raw/"
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
-PATH_INFO = ROOT / config.path.info
+SR = config.data.feature.sr
 
 print = functools.partial(print, flush=True)
 
 
 def main(args):
-    if not args.overwrite and PATH_INFO.exists():
-        with open(PATH_INFO, "r") as f:
-            info = json.load(f)
-    else:
-        info = {}
-
     songs = DIR_RAW.glob("*/")
     songs = sorted(songs)
     n_songs = len(songs)
     for n, song in enumerate(songs, 1):
         print(f"{n}/{n_songs}: {song.name}", end=" ")
-        info_songs = sync_song(song, DIR_SYNCED, args.overwrite)
-        info.update(info_songs)
-        with open(PATH_INFO, "w") as f:
-            json.dump(info, f, indent=2, ensure_ascii=False)
+        sync_song(song, DIR_SYNCED, args.overwrite)
 
 
 def sync_song(
@@ -161,7 +151,6 @@ def sync_song(
         overwrite (bool): Overwrite existing files.
     """
     dir_output_song = dir_output / dir_song.name
-    info = {}
     time_start = time.time()
     orig = next(dir_song.glob("*.wav"))
     orig_new = dir_output_song / orig.name
@@ -169,7 +158,7 @@ def sync_song(
 
     if overwrite or (not orig_new.exists()):
         dir_output_song.mkdir(exist_ok=True)
-        y_orig, sr = librosa.load(str(orig))
+        y_orig, _ = librosa.load(str(orig), sr=SR)
         flag_load_orig = True
         shutil.copy(orig, str(orig_new))
 
@@ -179,20 +168,19 @@ def sync_song(
         piano_new = dir_output_song_piano / piano.name
         if overwrite or (not piano_new.exists()):
             if not flag_load_orig:
-                y_orig, sr = librosa.load(str(orig), sr=sr)
+                y_orig, _ = librosa.load(str(orig), sr=SR)
                 flag_load_orig = True
-            y_piano, _ = librosa.load(str(piano), sr=sr)
-            y_piano_synced = sync_audio(y_piano, y_orig, sr)
-            sf.write(str(piano_new), y_piano_synced, sr)
+            y_piano, _ = librosa.load(str(piano), sr=SR)
+            y_piano_synced = sync_audio(y_piano, y_orig, SR)
+            sf.write(str(piano_new), y_piano_synced, SR)
 
-        info[piano.stem] = {
+        info.update(piano.stem, {
             "original": orig.stem,
             "title": orig.parent.stem,
-        }
+        })
         print(".", end="")
 
     print(f" Done ({time.time() - time_start:.2f}s)")
-    return info
 
 
 if __name__ == "__main__":
