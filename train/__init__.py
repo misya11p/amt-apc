@@ -1,1 +1,1 @@
-from ._utils import loss_fn
+from ._loss import loss_fn
