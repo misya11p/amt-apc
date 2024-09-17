@@ -10,7 +10,7 @@ import numpy as np
 import pretty_midi
 from tqdm import tqdm
 
-from utils import config
+from utils import config, info
 
 
 DIR_DATASET = ROOT / config.path.dataset
@@ -18,7 +18,6 @@ DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
 PATH_TMP = ROOT / "data/sv/tmp.json"
 PATH_STYLE_VECTORS = ROOT / config.path.style_vectors
-PATH_INFO = ROOT / config.path.info
 
 PITCH_MIN = config.data.midi.note_min
 PITCH_MAX = config.data.midi.note_max
@@ -49,7 +48,6 @@ def main(args):
         }
         with open(PATH_TMP, "w") as f:
             json.dump(out, f)
-        update_info(ignore_ids)
     style_vectors, style_features = create_style_vectors(raw_styles, params)
     out = {
         "style_vectors": style_vectors,
@@ -64,13 +62,18 @@ def extract_raw_styles(pianos, min_notes=1000):
     raw_styles = {}
     ignore_ids = []
     for piano in tqdm(pianos, desc="Extracting raw styles"):
+        pid = piano.stem
         status, raw_style = extract_raw_style(piano, min_notes)
         if status == 1:
-            ignore_ids.append(piano.stem)
+            ignore_ids.append(pid)
+            info.set(pid, "include_dataset", False)
         elif status == 2:
+            info.set(pid, "include_dataset", False)
             continue
+        else:
+            info.set(pid, "include_dataset", True)
 
-        raw_styles[piano.stem] = {
+        raw_styles[pid] = {
             "dist_vel": raw_style[0],
             "dist_pitch": raw_style[1],
             "onset_rates": raw_style[2],
@@ -181,18 +184,6 @@ def get_distribution(data):
     dist = np.array(dist)
     dist = dist / dist.sum()
     return dist
-
-
-def update_info(ignore_ids):
-    with open(PATH_INFO, "r") as f:
-        info = json.load(f)
-    for pid in info:
-        if pid in ignore_ids:
-            info[pid]["include_dataset"] = False
-        else:
-            info[pid]["include_dataset"] = True
-    with open(PATH_INFO, "w") as f:
-        json.dump(info, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":

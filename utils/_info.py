@@ -2,7 +2,10 @@ from pathlib import Path
 import json
 from typing import Dict, Any
 
-from ._config import Config as CustomDict
+from ._config import (
+    config,
+    Config as CustomDict
+)
 
 
 class Info:
@@ -36,5 +39,5 @@ class Info:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
 
 
-here = Path(__file__).resolve().parent
-info = Info(here / "info.json")
+root = Path(__file__).resolve().parent.parent
+info = Info(root / config.path.info)
