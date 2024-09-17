@@ -1,12 +1,16 @@
+from pathlib import Path
+import sys
 import json
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(ROOT))
+
 import numpy as np
 
+from utils import config
 
-with open("data/style_vector.json") as f:
-    style_vectors = json.load(f)
-svs = style_vectors["style_vector"]
-features = style_vectors["style_feature"]
-params = style_vectors["params"]
+
+PATH_STYLE_VECTORS = ROOT / config.path.style_vectors
 
 
 class Sampler:
@@ -14,9 +18,15 @@ class Sampler:
         self.latest = None
         self.variances = variances
         self.windows = windows
-        self.svs = {key: np.array(value) for key, value in svs.items()}
-        self.features = features
-        self.params = params
+
+        with open(PATH_STYLE_VECTORS, "r") as f:
+            style_vectors = json.load(f)
+        self.style_vectors = style_vectors["style_vectors"]
+        self.style_vectors = {
+            key: np.array(value) for key, value in self.style_vectors.items()
+        }
+        self.features = style_vectors["style_features"]
+        self.params = style_vectors["params"]
 
     def __len__(self):
         return len(self.svs)
@@ -57,7 +67,7 @@ class Sampler:
         keys_vel = []
         keys_pitch = []
         keys_onset = []
-        for key, feature in features.items():
+        for key, feature in self.features.items():
             f_vel, f_pitch, f_onset = feature
             if self._isin(f_vel, r_vel):
                 keys_vel.append(key)
