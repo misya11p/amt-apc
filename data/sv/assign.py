@@ -13,7 +13,7 @@ from tqdm import tqdm
 from utils import config
 
 
-DIR_DATASET = ROOT / config.dataset.dir
+DIR_DATASET = ROOT / config.path.dataset
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
 PATH_TMP = ROOT / "data/sv/tmp.json"
@@ -23,7 +23,7 @@ PATH_INFO = ROOT / config.path.info
 PITCH_MIN = config.data.midi.note_min
 PITCH_MAX = config.data.midi.note_max
 NUM_PITCH = config.data.midi.num_note
-N_VELOCITY = config.midi.num_velocity
+N_VELOCITY = config.data.midi.num_velocity
 SR = config.data.feature.sr
 HOP_LENGTH = config.data.feature.hop_sample
 N_FRAMES = config.data.input.num_frame

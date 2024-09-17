@@ -14,7 +14,7 @@ from data._utils_midi import midi2note, note2label
 from utils import config
 
 
-DIR_DATASET = ROOT / config.dataset.dir
+DIR_DATASET = ROOT / config.path.dataset
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_ARRAY = DIR_DATASET / "array/"
 DIR_ARRAY.mkdir(exist_ok=True)

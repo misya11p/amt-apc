@@ -118,7 +118,7 @@ import soundfile as sf
 from utils import config
 
 
-DIR_DATASET = ROOT / config.dataset.dir
+DIR_DATASET = ROOT / config.path.dataset
 DIR_RAW = DIR_DATASET / "raw/"
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_SYNCED.mkdir(exist_ok=True)

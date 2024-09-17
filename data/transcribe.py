@@ -12,7 +12,7 @@ from models import Pipeline
 from utils import config
 
 
-DIR_DATASET = ROOT / config.dataset.dir
+DIR_DATASET = ROOT / config.path.dataset
 DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
