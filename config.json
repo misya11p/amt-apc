@@ -57,7 +57,7 @@
     "threshold": {
       "onset": 0.5,
       "offset": 1.0,
-      "frames": 0.5
+      "frame": 0.5
     },
     "min_duration": 0.08
   },
