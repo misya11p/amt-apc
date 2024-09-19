@@ -11,6 +11,11 @@ from utils import config
 
 
 PATH_STYLE_VECTORS = ROOT / config.path.style_vectors
+PRESETS = {
+    "level1": (0., 0.9, -0.5),
+    "level2": (0., 1., 0.),
+    "level3": (0.5, 1.05, 0.5),
+}
 
 
 class Sampler:
@@ -47,7 +52,12 @@ class Sampler:
         _, _, f_onset = self.features[key_onset]
         return f_Vel, f_pitch, f_onset
 
-    def sample(self, params=(0., 1., 0.)):
+    def sample(self, params="level2"):
+        if isinstance(params, str):
+            if params not in PRESETS:
+                raise ValueError(f"Invalid value for 'params': {params}")
+            params = PRESETS[params]
+
         keys_vel, keys_pitch, keys_onset = self.choices(params)
         v_vel, v_pitch, v_onset = self.variances
         sv_vel = self.summarize(keys_vel, v_vel)[0:8]
@@ -57,7 +67,7 @@ class Sampler:
         self.latest = sv
         return sv
 
-    def choices(self, params=(0., 1., 0.)):
+    def choices(self, params):
         mean_vel, mean_pitch, mean_onset = params
         w_vel, w_pitch, w_onset = self.windows
         r_vel = (mean_vel - (w_vel / 2), mean_vel + (w_vel / 2))
