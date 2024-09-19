@@ -2,10 +2,15 @@ from pathlib import Path
 import json
 from typing import Dict, Any
 
+
 from ._config import (
     config,
     Config as CustomDict
 )
+
+
+ROOT = Path(__file__).parent.parent
+PATH_MOVIES = ROOT / config.path.dataset / "src.json"
 
 
 class Info:
@@ -37,6 +42,23 @@ class Info:
         if save:
             with open(self.path, "w") as f:
                 json.dump(self.data, f, indent=2, ensure_ascii=False)
+
+    def export(self):
+        movies = {}
+        for id, info in self.data.items():
+            if not info["include_dataset"]:
+                continue
+
+            title = info["title"]
+            if title not in movies:
+                movies[title] = {
+                    "original": info["original"],
+                    "pianos": []
+                }
+            movies[title]["pianos"].append(id)
+
+        with open(PATH_MOVIES, "w") as f:
+            json.dump(movies, f, indent=2, ensure_ascii=False)
 
     def piano2orig(self, id: str):
         return self[id].original
