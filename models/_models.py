@@ -93,17 +93,17 @@ class Pipeline(AMT):
             sv = sv.to(self.device)
 
         feature = self.wav2feature(path_input)
-        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
+        _, _, _, _, onset, offset, frames, velocity = self.transcript(feature, sv)
         note = self.mpe2note(
             onset,
             offset,
-            mpe,
+            frames,
             velocity,
             thred_onset=config.infer.threshold.onset,
             thred_offset=config.infer.threshold.offset,
-            thred_mpe=config.infer.threshold.mpe,
+            thred_mpe=config.infer.threshold.frames,
         )
-        self.note2midi(note, path_output, config.infer.min_length)
+        self.note2midi(note, path_output, config.infer.min_duration)
 
 
 # 未着手, todo
