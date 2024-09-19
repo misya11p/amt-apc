@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
 import torch
+from yt_dlp import YoutubeDL
 
 from models import Pipeline
 from data import SVSampler
@@ -23,10 +24,28 @@ def main(args):
 
     src = args.input
     if src.startswith("https://"):
-        pass # todo
+        src = download(src)
 
     sv = SV_SAMPLER.sample(params=args.style)
     pipeline.wav2midi(src, args.output, sv)
+
+
+def download(url):
+    ydl_opts = {
+        "outtmpl": "_audio.%(ext)s",
+        "format": "bestaudio/best",
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "wav",
+                "preferredquality": "192",
+            }
+        ],
+        "ignoreerrors": True,
+    }
+    with YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    return "_audio.wav"
 
 
 if __name__ == "__main__":

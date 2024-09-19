@@ -106,7 +106,6 @@ class Pipeline(AMT):
         self.note2midi(note, path_output, config.infer.min_duration)
 
 
-# 未着手, todo
 class Spec2MIDI(BaseSpec2MIDI):
     def __init__(self, encoder, decoder, sv_dim: int = 0):
         super().__init__(encoder, decoder)
