@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset
 
 from utils import config, info
-from data.sv.sampler import Sampler
+from data import SVSampler
 
 
 DIR_DATASET = ROOT / config.path.dataset / "dataset/"
@@ -28,7 +28,7 @@ class PianoCoversDataset(Dataset):
             pass
         else:
             raise ValueError(f"Invalid value for 'split': {split}")
-        self.sampler = Sampler()
+        self.sv_sampler = SVSampler()
 
     def __len__(self):
         return len(self.data)
@@ -63,5 +63,5 @@ class PianoCoversDataset(Dataset):
         fname_orig = f"{id_orig}_{n_segment}.npy"
         path_orig = DIR_SPEC / fname_orig
         spec = np.load(path_orig)
-        sv = self.sampler[id_piano]
+        sv = self.sv_sampler[id_piano]
         return spec, sv
