@@ -1,10 +1,12 @@
 from pathlib import Path
 import sys
 from collections import OrderedDict
+from typing import List, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -18,6 +20,7 @@ from utils import config
 
 
 DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+Array = List | Tuple | np.ndarray | torch.Tensor
 
 
 class Pipeline(AMT):
@@ -69,11 +72,7 @@ class Pipeline(AMT):
         self,
         path_input: str,
         path_output: str,
-        sv: None | torch.Tensor = None,
-        thred_onset: float = 0.5,
-        thred_offset: float = 0.5,
-        thred_mpe: float = 0.5,
-        min_length: float = 0.,
+        sv: None | Array = None,
     ):
         """
         Convert audio to MIDI.
@@ -81,13 +80,10 @@ class Pipeline(AMT):
         Args:
             path_input (str): Path to the input audio file.
             path_output (str): Path to the output MIDI file.
-            sv (None | torch.Tensor, optional): Style vector.
-            thred_onset (float, optional): Threshold for onset. Defaults to 0.5.
-            thred_offset (float, optional): Threshold for offset. Defaults to 0.5.
-            thred_mpe (float, optional): Threshold for MPE. Defaults to 0.5.
-            min_length (float, optional): Minimum length (s) of the note. Defaults to 0.
+            sv (None | Array, optional): Style vector. Defaults to None.
         """
         if sv is not None:
+            sv = torch.tensor(sv)
             if sv.dim() == 1:
                 sv = sv.unsqueeze(0)
             if sv.dim() == 2:
@@ -103,11 +99,11 @@ class Pipeline(AMT):
             offset,
             mpe,
             velocity,
-            thred_onset=thred_onset,
-            thred_offset=thred_offset,
-            thred_mpe=thred_mpe,
+            thred_onset=config.infer.threshold.onset,
+            thred_offset=config.infer.threshold.offset,
+            thred_mpe=config.infer.threshold.mpe,
         )
-        self.note2midi(note, path_output, min_length)
+        self.note2midi(note, path_output, config.infer.min_length)
 
 
 # 未着手, todo

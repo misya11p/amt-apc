@@ -53,11 +53,20 @@
     "theta_frame": 0.2,
     "theta_velocity": 0.01
   },
+  "infer": {
+    "threshold": {
+      "onset": 0.5,
+      "offset": 1.0,
+      "frames": 0.5
+    },
+    "min_duration": 0.08
+  },
   "path": {
     "amt": "models/params/amt.pth",
     "apc": "models/params/apc.pth",
     "dataset": "dataset/",
     "info": "utils/info.json",
+    "src": "dataset/src.json",
     "style_vectors": "data/sv/style_vectors.json",
     "checkpoints": "models/params/checkpoints/"
   }
