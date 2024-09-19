@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import Dataset
 
 from utils import config, info
-from data import SVSampler
+from .sv.sampler import Sampler as SVSampler
 
 
 DIR_DATASET = ROOT / config.path.dataset / "dataset/"

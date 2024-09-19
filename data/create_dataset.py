@@ -36,72 +36,77 @@ def main(args):
     songs = sorted(songs)
     n_songs = len(songs)
     for ns, song in enumerate(songs, 1):
-        name_song = song.name
-        print(f"{ns}/{n_songs}: {name_song}", end=" ", flush=True)
-        dir_piano = song / DIR_NAME_PIANO
+        print(f"{ns}/{n_songs}: {song.name}", end=" ", flush=True)
+        create_dataset(song, is_train[song.name], args.overwrite, args.rm_ends)
 
-        orig, = list(song.glob("*.npy"))
-        spec = np.load(orig)
-        spec = preprocess_feature(spec)
-        length_song = len(spec) - MARGIN
-        idxs = range(0, length_song, N_FRAMES)
-        n_dig = len(str(len(idxs)))
-        for ns, i in enumerate(idxs):
-            spec_block = (spec[i:i + N_FRAMES + MARGIN]).T # (n_bins, n_frames)
+    info.export()
+
+
+def create_dataset(song, is_train, overwrite, rm_ends):
+    dir_piano = song / DIR_NAME_PIANO
+
+    orig, = list(song.glob("*.npy"))
+    spec = np.load(orig)
+    spec = preprocess_feature(spec)
+    length_song = len(spec) - MARGIN
+    idxs = range(0, length_song, N_FRAMES)
+    n_dig = len(str(len(idxs)))
+    for ns, i in enumerate(idxs):
+        spec_block = (spec[i:i + N_FRAMES + MARGIN]).T # (n_bins, n_frames)
+        sid = str(ns).zfill(n_dig)
+        filename = DIR_SPEC / f"{orig.stem}_{sid}"
+        if (not overwrite) and Path(filename).with_suffix(".npy").exists():
+            continue
+        np.save(filename, spec_block)
+
+    pianos = list(dir_piano.glob("*.npz"))
+    pianos = sorted(pianos)
+    for piano in pianos:
+        if not info[piano.stem].include_dataset:
+            continue
+
+        label = np.load(piano)
+        label = {
+            "onset": label["onset"],
+            "offset": label["offset"],
+            "frames": label["frames"],
+            "velocity": label["velocity"],
+        }
+        label = align_length(label, length_song)
+
+        save_args = []
+        for ns, i in enumerate(range(0, length_song, N_FRAMES)):
+            # (n_frames, n_bins)
+            onset_block = label["onset"][i:i + N_FRAMES] # float [0, 1]
+            offset_block = label["offset"][i:i + N_FRAMES] # float [0, 1]
+            frames_block = label["frames"][i:i + N_FRAMES] # int {0, 1}
+            velocity_block = label["velocity"][i:i + N_FRAMES] # int [0, 127]
+
             sid = str(ns).zfill(n_dig)
-            filename = DIR_SPEC / f"{orig.stem}_{sid}"
-            if (not args.overwrite) and Path(filename).with_suffix(".npy").exists():
-                continue
-            np.save(filename, spec_block)
-
-        pianos = list(dir_piano.glob("*.npz"))
-        pianos = sorted(pianos)
-        for piano in pianos:
-            if not info[piano.stem].include_dataset:
+            prefix = DIR_LABEL / f"{piano.stem}_{sid}"
+            if (not overwrite) and prefix.with_suffix(".npz").exists():
                 continue
 
-            label = np.load(piano)
-            label = {
-                "onset": label["onset"],
-                "offset": label["offset"],
-                "frames": label["frames"],
-                "velocity": label["velocity"],
-            }
-            label = align_length(label, length_song)
-
-            save_args = []
-            for ns, i in enumerate(range(0, length_song, N_FRAMES)):
-                # (n_frames, n_bins)
-                onset_block = label["onset"][i:i + N_FRAMES] # float [0, 1]
-                offset_block = label["offset"][i:i + N_FRAMES] # float [0, 1]
-                frames_block = label["frames"][i:i + N_FRAMES] # int {0, 1}
-                velocity_block = label["velocity"][i:i + N_FRAMES] # int [0, 127]
-
-                sid = str(ns).zfill(n_dig)
-                prefix = DIR_LABEL / f"{piano.stem}_{sid}"
-                if (not args.overwrite) and prefix.with_suffix(".npz").exists():
-                    continue
-
-                save_args.append({
-                    "prefix": prefix,
-                    "data": {
-                        "onset": onset_block,
-                        "offset": offset_block,
-                        "frames": frames_block,
-                        "velocity": velocity_block,
-                    }
-                })
-            if ne := args.rm_ends:
-                save_args = save_args[ne:-ne]
-            for arg in save_args:
-                np.savez(arg["prefix"], **arg["data"])
-            info.update(piano.stem, {
-                "n_segments": len(save_args),
-                "split": "train" if is_train[name_song] else "test",
+            save_args.append({
+                "prefix": prefix,
+                "data": {
+                    "onset": onset_block,
+                    "offset": offset_block,
+                    "frames": frames_block,
+                    "velocity": velocity_block,
+                }
             })
+        if rm_ends:
+            save_args = save_args[rm_ends:-rm_ends]
+        for arg in save_args:
+            np.savez(arg["prefix"], **arg["data"])
+        info.update(piano.stem, {
+            "n_segments": len(save_args),
+            "split": "train" if is_train else "test",
+        })
 
-            print(".", end="", flush=True)
-        print(f" Done.", flush=True)
+        print(".", end="", flush=True)
+    print(f" Done.", flush=True)
 
 
 def align_length(label, length):

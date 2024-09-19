@@ -1,7 +1,6 @@
 import argparse
 from pathlib import Path
 import sys
-import time
 import functools
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,7 +33,6 @@ def main(args):
 
 
 def create_label(song, overwrite):
-    time_start = time.time()
     dir_song = DIR_ARRAY / song.name
     if (not overwrite) and dir_song.exists():
         print("Already exists, skip.")
@@ -66,7 +64,7 @@ def create_label(song, overwrite):
             velocity=label["velocity"],
         )
         print(".", end="")
-    print(f" Done ({time.time() - time_start:.2f}s)")
+    print(f" Done.")
 
 
 def get_label(path_midi: Path):

@@ -10,7 +10,7 @@ from ._config import (
 
 
 ROOT = Path(__file__).parent.parent
-PATH_MOVIES = ROOT / config.path.dataset / "src.json"
+PATH_MOVIES = ROOT / config.path.src
 
 
 class Info:
