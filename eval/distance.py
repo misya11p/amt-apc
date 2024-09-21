@@ -27,7 +27,7 @@ def main(args):
         if not orig.exists():
             no_origs.append(cover)
             continue
-        dist = get_distance(orig, cover, args.measure)
+        dist = get_distance(orig, cover)
         dists[cover.stem] = dist
 
     write_result(args.path_result, dists, no_origs)
