@@ -59,8 +59,8 @@ def write_result(path, dists, no_origs):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dir_input", type=str, default="eval/data/")
-    parser.add_argument("--path_result", type=str, default="./eval/qmax.txt")
+    parser = argparse.ArgumentParser("Evaluate cover similarity using qmax measure.")
+    parser.add_argument("--dir_input", type=str, default="eval/data/", help="Directory containing cover WAV files.")
+    parser.add_argument("--path_result", type=str, default="./eval/qmax.txt", help="Path to save the result.")
     args = parser.parse_args()
     main(args)
