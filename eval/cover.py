@@ -24,9 +24,7 @@ def main(args):
     device = torch.device(args.device) if args.device else DEFAULT_DEVICE
 
     # Create MIDI files from WAV files
-    midis = cover(
-        dir_output, args.path_model, device, args.with_sv, args.no_load
-    )
+    midis = cover(dir_output, args.path_model, device, args.with_sv, args.no_load)
 
     # Convert MIDI files to audio files
     midi2audio(midis, args.sound_font)
@@ -76,7 +74,7 @@ def midi2audio(midis, sound_font):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("Generate piano covers (MIDI) using the trained model, and convert them to audio.")
     parser.add_argument("--dir_output", "-o", type=str, default="eval/data/")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--path_model", type=str, default=None)

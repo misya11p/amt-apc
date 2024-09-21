@@ -15,7 +15,7 @@ from train import loss_fn
 from utils import config
 
 
-DEFAULT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main(args):
@@ -63,12 +63,12 @@ def get_f1(model, dataloader, device):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path_model", type=str, default=None)
-    parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--device", type=str, default=None)
-    parser.add_argument("--split", type=str, default="test")
-    parser.add_argument("--no_sv", action="store_true")
-    parser.add_argument("--no_load", action="store_true")
+    parser = argparse.ArgumentParser("Compute F1 score")
+    parser.add_argument("--path_model", type=str, default=None, help="Path to the model. Defaults to CONFIG.PATH.APC.")
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--device", type=str, default=None, help="Device to use. Defaults to auto (CUDA if available else CPU).")
+    parser.add_argument("--split", type=str, default="test", help="Dataset split to use ('train' or 'test' or 'all'). Defaults to 'test'.")
+    parser.add_argument("--no_sv", action="store_true", help="Do not use the style vector.")
+    parser.add_argument("--no_load", action="store_true", help="Do not load the model.")
     args = parser.parse_args()
     main(args)
