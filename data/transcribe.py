@@ -34,7 +34,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Transcribe piano audio to MIDI.")
     parser.add_argument("--device", type=str, default=None, help="Device to use. Defaults to auto (CUDA if available else CPU).")
-    parser.add_argument("--path_amt", type=str, default=None, help="Path to the AMT model. Defaults to None (use the default model).")
+    parser.add_argument("--path_amt", type=str, default=None, help="Path to the AMT model. Defaults to CONFIG.PATH.AMT.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing MIDI files.")
     args = parser.parse_args()
     main(args)
