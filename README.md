@@ -31,10 +31,16 @@ wget
 python infer input.wav
 ```
 
-You can also input the YouTube URL (requires `yt-dlp`).
+You can also input the YouTube URL (requires [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)).
 
 ```bash
 python infer 'https://www.youtube.com/watch?v=...'
+```
+
+You can also specify the style (`level1`, `level2`, `level3`).
+
+```bash
+python infer input.wav --style level3
 ```
 
 ## Usage (Training & Evaluation)

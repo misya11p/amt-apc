@@ -45,7 +45,7 @@
     "sv_dim": 24
   },
   "train": {
-    "batch_size": 1,
+    "batch_size": 4,
     "n_epochs": 5,
     "lr": 0.0001,
     "beta": 0.75,
