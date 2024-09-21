@@ -6,7 +6,6 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
 import torch
-from yt_dlp import YoutubeDL
 
 from models import Pipeline
 from data import SVSampler
@@ -24,6 +23,7 @@ def main(args):
 
     src = args.input
     if src.startswith("https://"):
+        from yt_dlp import YoutubeDL
         src = download(src)
 
     sv = SV_SAMPLER.sample(params=args.style)
