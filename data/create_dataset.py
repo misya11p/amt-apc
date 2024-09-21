@@ -69,7 +69,7 @@ def create_dataset(song, is_train, overwrite, rm_ends):
         label = {
             "onset": label["onset"],
             "offset": label["offset"],
-            "frames": label["frames"],
+            "frame": label["frame"],
             "velocity": label["velocity"],
         }
         label = align_length(label, length_song)
@@ -79,7 +79,7 @@ def create_dataset(song, is_train, overwrite, rm_ends):
             # (n_frames, n_bins)
             onset_block = label["onset"][i:i + N_FRAMES] # float [0, 1]
             offset_block = label["offset"][i:i + N_FRAMES] # float [0, 1]
-            frames_block = label["frames"][i:i + N_FRAMES] # int {0, 1}
+            frame_block = label["frame"][i:i + N_FRAMES] # int {0, 1}
             velocity_block = label["velocity"][i:i + N_FRAMES] # int [0, 127]
 
             sid = str(ns).zfill(n_dig)
@@ -92,7 +92,7 @@ def create_dataset(song, is_train, overwrite, rm_ends):
                 "data": {
                     "onset": onset_block,
                     "offset": offset_block,
-                    "frames": frames_block,
+                    "frame": frame_block,
                     "velocity": velocity_block,
                 }
             })

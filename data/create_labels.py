@@ -60,7 +60,7 @@ def create_label(song, overwrite):
             prefix,
             onset=label["onset"],
             offset=label["offset"],
-            frames=label["frames"],
+            frame=label["frame"],
             velocity=label["velocity"],
         )
         print(".", end="")
@@ -73,7 +73,7 @@ def get_label(path_midi: Path):
     label = {
         "onset": np.array(label["onset"], dtype=np.float32),
         "offset": np.array(label["offset"], dtype=np.float32),
-        "frames": (np.array(label["mpe"]) > 0.5).astype(np.uint8),
+        "frame": (np.array(label["mpe"]) > 0.5).astype(np.uint8),
         "velocity": np.array(label["velocity"], dtype=np.uint8),
     }
     return label

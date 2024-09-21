@@ -42,10 +42,10 @@ class PianoCoversDataset(Dataset):
         sv = torch.tensor(sv).float()
         onset = torch.from_numpy(label["onset"])
         offset = torch.from_numpy(label["offset"])
-        frames = torch.from_numpy(label["frames"])
+        frame = torch.from_numpy(label["frame"])
         velocity = torch.from_numpy(label["velocity"])
 
-        return spec, sv, onset, offset, frames, velocity
+        return spec, sv, onset, offset, frame, velocity
 
     @staticmethod
     def get_id_n(path: Path):
