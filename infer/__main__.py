@@ -23,14 +23,14 @@ def main(args):
 
     src = args.input
     if src.startswith("https://"):
-        from yt_dlp import YoutubeDL
         src = download(src)
 
     sv = SV_SAMPLER.sample(params=args.style)
-    pipeline.wav2midi(src, args.output, sv)
+    pipeline.wav2midi(src, args.output, sv, silent=False)
 
 
 def download(url):
+    from yt_dlp import YoutubeDL
     ydl_opts = {
         "outtmpl": "_audio.%(ext)s",
         "format": "bestaudio/best",

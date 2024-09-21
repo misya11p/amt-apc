@@ -73,6 +73,7 @@ class Pipeline(AMT):
         path_input: str,
         path_output: str,
         sv: None | Array = None,
+        silent: bool = True,
     ):
         """
         Convert audio to MIDI.
@@ -93,7 +94,9 @@ class Pipeline(AMT):
             sv = sv.to(self.device)
 
         feature = self.wav2feature(path_input)
-        _, _, _, _, onset, offset, frame, velocity = self.transcript(feature, sv)
+        _, _, _, _, onset, offset, frame, velocity = self.transcript(feature, sv, silent)
+        if not silent:
+            print("Converting to MIDI ...", end=" ", flush=True)
         note = self.mpe2note(
             onset,
             offset,
@@ -104,6 +107,8 @@ class Pipeline(AMT):
             thred_mpe=config.infer.threshold.frame,
         )
         self.note2midi(note, path_output, config.infer.min_duration)
+        if not silent:
+            print("Done.")
 
 
 class Spec2MIDI(BaseSpec2MIDI):
