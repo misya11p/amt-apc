@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
-from dlprog import train_progress
+import dlprog
 
 from models import load_model, save_model
 from train._loss import loss_fn
@@ -24,14 +24,26 @@ PROG_LABELS = ["loss", "F1 avg", "F1 onset", "F1 frame", "F1 velocity"]
 
 
 def train(
-    model,
-    optimizer,
-    dataloader,
-    device,
-    freq_save=0,
-    prog=None,
-    file_log=None,
-):
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    dataloader: DataLoader,
+    device: int | torch.device,
+    freq_save: int = 0,
+    prog: dlprog.Progress = None,
+    file_log: Path = None,
+) -> None:
+    """
+    Training loop on each device.
+
+    Args:
+        model (torch.nn.Module): Model to train.
+        optimizer (torch.optim.Optimizer): Optimizer to use.
+        dataloader (DataLoader): DataLoader to use.
+        device (int | torch.device): Device to use.
+        freq_save (int, optional): Frequency to save the model.
+        prog (dlprog.Progress, optional): Progress bar.
+        file_log (Path, optional): Path to the log file.
+    """
     model.train()
 
     for i, batch in enumerate(dataloader, 1):
@@ -68,13 +80,24 @@ def train(
 class Trainer:
     def __init__(
         self,
-        path_model,
-        dataset,
-        n_gpus,
-        with_sv,
-        no_load,
-        freq_save
+        path_model: str,
+        dataset: torch.utils.data.Dataset,
+        n_gpus: int,
+        with_sv: bool,
+        no_load: bool,
+        freq_save: int,
     ):
+        """
+        Trainer for calling in DDP.
+
+        Args:
+            path_model (str): Path to the base model.
+            dataset (torch.utils.data.Dataset): Dataset to use.
+            n_gpus (int): Number of GPUs to use.
+            with_sv (bool): Whether to use the style vector.
+            no_load (bool): Do not use the base model.
+            freq_save (int): Frequency to save the model.
+        """
         self.path_model = path_model
         self.dataset = dataset
         self.n_gpus = n_gpus
@@ -85,7 +108,8 @@ class Trainer:
         self.no_load = no_load
         self.freq_save = freq_save
 
-    def setup(self, device):
+    def setup(self, device: int | torch.device) -> None:
+        """Setup the model, optimizer, and dataloader."""
         model = load_model(
             path_model=self.path_model,
             device=device,
@@ -115,7 +139,8 @@ class Trainer:
             shuffle=(self.sampler is None),
         )
 
-    def __call__(self, device):
+    def __call__(self, device: int | torch.device) -> None:
+        """Training loop."""
         self.setup(device)
 
         is_parent = (not self.ddp) or (device == 0)
@@ -124,7 +149,7 @@ class Trainer:
             dir_checkpoint = DIR_CHECKPOINTS / date
             dir_checkpoint.mkdir(parents=True)
             file_log = dir_checkpoint / NAME_FILE_LOG
-            prog = train_progress(width=20, label=PROG_LABELS)
+            prog = dlprog.train_progress(width=20, label=PROG_LABELS)
             prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
         else:
             prog = None
