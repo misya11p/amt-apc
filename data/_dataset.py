@@ -43,7 +43,7 @@ class PianoCoversDataset(Dataset):
         onset = torch.from_numpy(label["onset"])
         offset = torch.from_numpy(label["offset"])
         frame = torch.from_numpy(label["frame"])
-        velocity = torch.from_numpy(label["velocity"])
+        velocity = torch.from_numpy(label["velocity"]).long()
 
         return spec, sv, onset, offset, frame, velocity
 

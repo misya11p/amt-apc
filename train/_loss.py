@@ -90,8 +90,6 @@ def loss_fn(pred, label):
     loss_frame_f = BCE_LOSS(frame_pred_f, frame_label)
     loss_frame_t = BCE_LOSS(frame_pred_t, frame_label)
 
-    # 後で直す
-    velocity_label = velocity_label.long()
     loss_velocity_f = CE_LOSS(velocity_pred_f, velocity_label)
     loss_velocity_t = CE_LOSS(velocity_pred_t, velocity_label)
 
