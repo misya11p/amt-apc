@@ -8,7 +8,7 @@ from _trainer import Trainer
 from data import PianoCoversDataset
 
 
-DEVICE_DEFAULT = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE_CUDA = torch.device("cuda")
 
 
 def main(args):
@@ -31,7 +31,7 @@ def main(args):
             join=True,
         )
     else:
-        trainer(DEVICE_DEFAULT)
+        trainer(DEVICE_CUDA)
 
 
 if __name__ == "__main__":
