@@ -33,7 +33,7 @@ def train(
     file_log: Path = None,
 ) -> None:
     """
-    Training loop on each device.
+    Training loop in one epoch.
 
     Args:
         model (torch.nn.Module): Model to train.
@@ -66,7 +66,7 @@ def train(
             prog.update([loss.item(), sum(f1) / 3, *f1])
 
         if freq_save and (i % freq_save == 0):
-            save_model(model, config.path.apc)
+            save_model(model, DIR_CHECKPOINTS / "latest.pth")
             loss, f1, f1_onset, f1_frame, f1_velocity = prog.now_values()
             with open(file_log, "a") as f:
                 f.write(
