@@ -24,7 +24,7 @@ def main(args):
     device = torch.device(args.device) if args.device else DEVICE_DEFAULT
     amt = Pipeline(path_model=args.path_amt, device=device, amt=True)
 
-    for piano_wav in tqdm(piano_wavs):
+    for piano_wav in tqdm(piano_wavs, desc="Transcribing piano audio to MIDI"):
         piano_midi = piano_wav.with_suffix(".mid")
         if (not args.overwrite) and piano_midi.exists():
             continue
