@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 import sys
-import functools
+from typing import Dict
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
@@ -19,8 +19,6 @@ DIR_ARRAY = DIR_DATASET / "array/"
 DIR_ARRAY.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
 
-print = functools.partial(print, flush=True)
-
 
 def main(args):
     songs = list(DIR_SYNCED.glob("*/"))
@@ -28,11 +26,18 @@ def main(args):
     n_songs = len(songs)
 
     for n, song in enumerate(songs, 1):
-        print(f"{n}/{n_songs}: {song.name}", end=" ")
+        print(f"{n}/{n_songs}: {song.name}", end=" ", flush=True)
         create_label(song, args.overwrite)
 
 
-def create_label(song, overwrite):
+def create_label(song: Path, overwrite: bool) -> None:
+    """
+    Create the label files from the piano midi files.
+
+    Args:
+        song (Path): Path to the song directory.
+        overwrite (bool): Overwrite existing files.
+    """
     dir_song = DIR_ARRAY / song.name
     if (not overwrite) and dir_song.exists():
         print("Already exists, skip.")
@@ -63,11 +68,20 @@ def create_label(song, overwrite):
             frame=label["frame"],
             velocity=label["velocity"],
         )
-        print(".", end="")
-    print(f" Done.")
+        print(".", end="", flush=True)
+    print(f" Done.", flush=True)
 
 
-def get_label(path_midi: Path):
+def get_label(path_midi: Path) -> Dict[str, np.ndarray]:
+    """
+    Get the label from the piano midi
+
+    Args:
+        path_midi (Path): Path to the piano midi file.
+
+    Returns:
+        Dict[str, np.ndarray]: Dictionary of the label.
+    """
     notes = midi2note(str(path_midi))
     label = note2label(notes)
     label = {
@@ -80,7 +94,7 @@ def get_label(path_midi: Path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Create labels for the dataset.")
+    parser = argparse.ArgumentParser("Transform the midi files to tuple of (onset, offset, frame, velocity).")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)
