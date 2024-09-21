@@ -35,12 +35,12 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path_model", type=str, default=None)
-    parser.add_argument("--n_gpus", type=int, default=2)
-    parser.add_argument("--split", type=str, default="train") # "train" or "test" or "all"
-    parser.add_argument("--no_sv", action="store_true")
-    parser.add_argument("--no_load", action="store_true")
-    parser.add_argument("--freq_save", type=int, default=100)
+    parser = argparse.ArgumentParser("Train the model.")
+    parser.add_argument("--path_model", type=str, default=None, help="Path to the base model. Defaults to CONFIG.PATH.AMT.")
+    parser.add_argument("--n_gpus", type=int, default=2, help="Number of GPUs to use. Defaults to 2.")
+    parser.add_argument("--split", type=str, default="train", help="Dataset split to use: 'train' or 'test' or 'all'. Defaults to 'train'.")
+    parser.add_argument("--no_sv", action="store_true", help="Do not use the style vector.")
+    parser.add_argument("--no_load", action="store_true", help="Do not load the base model.")
+    parser.add_argument("--freq_save", type=int, default=100, help="Frequency to save the model and logs. Defaults to 100.")
     args = parser.parse_args()
     main(args)
