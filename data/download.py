@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import argparse
 import json
+from typing import List
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
@@ -26,7 +27,15 @@ def main(args):
         download(DIR_RAW / title, movies["original"], movies["pianos"])
 
 
-def download(dir_song, original, pianos):
+def download(dir_song: Path, original: str, pianos: List[str]) -> None:
+    """
+    Download the audio files from the source file on YouTube.
+
+    Args:
+        dir_song (Path): Path to the song directory to save the audio files.
+        original (str): ID of the original audio file on YouTube.
+        pianos (List[str]): IDs of the piano audio files on YouTube.
+    """
     dir_song_piano = dir_song / DIR_NAME_PIANO
     dir_song_piano.mkdir(exist_ok=True, parents=True)
 
@@ -54,7 +63,7 @@ def download(dir_song, original, pianos):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--path_src", type=str, default=None, help="Path to the source file.")
+    parser = argparse.ArgumentParser("Download the audio files from the source file on YouTube.")
+    parser.add_argument("--path_src", type=str, default=None, help="Path to the source file. Defaults to CONFIG.PATH.SRC.")
     args = parser.parse_args()
     main(args)
