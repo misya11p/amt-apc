@@ -40,7 +40,7 @@ def f1_fn(
     return f1_onset, f1_frame, f1_velocity
 
 
-def select(label, prob=0.):
+def extract(label, prob=0.):
     idx_pos = (label > 0)
     shifted_p = torch.roll(idx_pos, shifts=1, dims=-1)
     shifted_n = torch.roll(idx_pos, shifts=-1, dims=-1)
@@ -50,13 +50,14 @@ def select(label, prob=0.):
 
 
 def loss_fn(pred, label):
-    # unpack
+    # Unpack
     onset_pred_f, offset_pred_f, frame_pred_f, velocity_pred_f, _, \
     onset_pred_t, offset_pred_t, frame_pred_t, velocity_pred_t = pred
 
     onset_label, offset_label, frame_label, velocity_label = label
     frame_label = frame_label.float()
 
+    # Calculate F1
     with torch.no_grad():
         f1 = f1_fn(
             (onset_pred_t > THRESHOLD),
@@ -67,23 +68,23 @@ def loss_fn(pred, label):
             velocity_label.bool()
         )
 
-    # select
-    onset_idx = select(onset_label, prob=THETA_ONSET)
+    # Extract the position where the sound is occurring and its surroundings.
+    onset_idx = extract(onset_label, prob=THETA_ONSET)
     onset_pred_f = onset_pred_f[onset_idx]
     onset_pred_t = onset_pred_t[onset_idx]
     onset_label = onset_label[onset_idx]
 
-    frame_idx = select(frame_label, prob=THETA_FRAME)
+    frame_idx = extract(frame_label, prob=THETA_FRAME)
     frame_pred_f = frame_pred_f[frame_idx]
     frame_pred_t = frame_pred_t[frame_idx]
     frame_label = frame_label[frame_idx]
 
-    velocity_idx = select(velocity_label, prob=THETA_VELOCITY)
+    velocity_idx = extract(velocity_label, prob=THETA_VELOCITY)
     velocity_pred_f = velocity_pred_f[velocity_idx]
     velocity_pred_t = velocity_pred_t[velocity_idx]
     velocity_label = velocity_label[velocity_idx]
 
-    # calculate loss
+    # Calculate loss
     loss_onset_f = BCE_LOSS(onset_pred_f, onset_label)
     loss_onset_t = BCE_LOSS(onset_pred_t, onset_label)
 
