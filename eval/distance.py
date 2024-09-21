@@ -16,7 +16,6 @@ from utils import info
 
 def main(args):
     dir_input = Path(args.dir_input)
-
     covers = list(dir_input.glob("*.wav"))
     covers = sorted(covers)
 
@@ -29,7 +28,6 @@ def main(args):
             continue
         dist = get_distance(orig, cover)
         dists[cover.stem] = dist
-
     write_result(args.path_result, dists, no_origs)
 
 
@@ -60,7 +58,7 @@ def write_result(path, dists, no_origs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Evaluate cover similarity using qmax measure.")
-    parser.add_argument("--dir_input", type=str, default="eval/data/", help="Directory containing cover WAV files.")
-    parser.add_argument("--path_result", type=str, default="./eval/qmax.txt", help="Path to save the result.")
+    parser.add_argument("--dir_input", type=str, default="ROOT/eval/data/", help="Directory containing cover WAV files.")
+    parser.add_argument("--path_result", type=str, default="ROOT/eval/qmax.txt", help="Path to save the result.")
     args = parser.parse_args()
     main(args)
