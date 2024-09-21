@@ -32,7 +32,7 @@ def main(args):
     midi2audio(midis, args.sound_font)
 
 
-def cover(dir_output, path_model, device, with_sv, no_load):
+def cover(dir_output, path_model, device, with_sv, no_load, overwrite):
     pipeline = Pipeline(
         path_model=path_model,
         device=device,
@@ -45,7 +45,15 @@ def cover(dir_output, path_model, device, with_sv, no_load):
     midis = []
     for song in tqdm(songs):
         path_input = info.id2path(song).raw
+        if not path_input.exists():
+            print(f"File not found: {path_input}")
+            continue
+
         path_output = dir_output / f"{song}.mid"
+        if path_output.exists() and not overwrite:
+            midis.append(path_output)
+            continue
+
         sv = sv_sampler.random()
         pipeline.wav2midi(
             path_input=str(path_input),
@@ -70,6 +78,7 @@ def midi2audio(midis, sound_font):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir_output", "-o", type=str, default="eval/data/")
+    parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--path_model", type=str, default=None)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--with_sv", action="store_true")
