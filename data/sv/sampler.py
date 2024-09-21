@@ -39,6 +39,10 @@ class Sampler:
     def __getitem__(self, key):
         return self.style_vectors[key]
 
+    def random(self):
+        key = np.random.choice(list(self.style_vectors.keys()))
+        return self[key]
+
     def get_sv(self, key_vel, key_pitch, key_onset):
         sv_vel = self[key_vel][0:8]
         sv_pitch = self[key_pitch][8:16]
