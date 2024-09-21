@@ -1,6 +1,6 @@
-import argparse
 from pathlib import Path
 import sys
+import argparse
 import random
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,7 +18,6 @@ DIR_FINAL = DIR_DATASET / "dataset/"
 DIR_SPEC = DIR_FINAL / "spec/"
 DIR_LABEL = DIR_FINAL / "label/"
 DIR_NAME_PIANO = "piano/"
-
 N_FRAMES = config.data.input.num_frame
 MARGIN = config.data.input.margin_b + config.data.input.margin_f
 
@@ -42,7 +41,22 @@ def main(args):
     info.export()
 
 
-def create_dataset(song, is_train, overwrite, rm_ends):
+def create_dataset(
+    song: Path,
+    is_train: bool,
+    overwrite: bool,
+    rm_ends: int,
+) -> None:
+    """
+    Create the dataset from the song directory. Split the song into
+    segments.
+
+    Args:
+        song (Path): Path to the song directory.
+        is_train (bool): Train or test.
+        overwrite (bool): Overwrite existing files.
+        rm_ends (int): Remove n segments from the beginning and the end of the song.
+    """
     dir_piano = song / DIR_NAME_PIANO
 
     orig, = list(song.glob("*.npy"))
