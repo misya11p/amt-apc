@@ -39,8 +39,8 @@ class Pipeline(AMT):
 
         Args:
             path_model (str, optional):
-                Path to the model. If None, use the default model.
-                Defaults to None.
+                Path to the model. If None, use the default model
+                (CONFIG.PATH.AMT or CONFIG.PATH.APC). Defaults to None.
             device (torch.device, optional):
                 Device to use for the model. Defaults to auto (CUDA if
                 available else CPU).
@@ -161,8 +161,8 @@ def load_model(
 
     Args:
         path_model (str, optional):
-            Path to the model. If None, use the default model. Defaults
-            to None.
+            Path to the model. If None, use the default model
+            (CONFIG.PATH.AMT or CONFIG.PATH.APC). Defaults to None.
         device (torch.device, optional):
             Device to use for the model. Defaults to auto (CUDA if
             available else CPU).
