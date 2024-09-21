@@ -101,12 +101,11 @@ def sync_audio(
 # ------------------------------------------------------------------ <<<
 
 
-import argparse
 from pathlib import Path
 import sys
-import shutil
+import argparse
 import time
-import functools
+import shutil
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
@@ -124,15 +123,13 @@ DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
 SR = config.data.feature.sr
 
-print = functools.partial(print, flush=True)
-
 
 def main(args):
     songs = DIR_RAW.glob("*/")
     songs = sorted(songs)
     n_songs = len(songs)
     for n, song in enumerate(songs, 1):
-        print(f"{n}/{n_songs}: {song.name}", end=" ")
+        print(f"{n}/{n_songs}: {song.name}", end=" ", flush=True)
         sync_song(song, DIR_SYNCED, args.overwrite)
 
 
@@ -178,9 +175,8 @@ def sync_song(
             "original": orig.stem,
             "title": orig.parent.stem,
         })
-        print(".", end="")
-
-    print(f" Done ({time.time() - time_start:.2f}s)")
+        print(".", end="", flush=True)
+    print(f" Done ({time.time() - time_start:.2f}s)", flush=True)
 
 
 if __name__ == "__main__":
