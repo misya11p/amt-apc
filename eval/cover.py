@@ -38,14 +38,13 @@ def cover(dir_output, path_model, device, with_sv, no_load):
         device=device,
         with_sv=with_sv,
         no_load=no_load,
-        device=device
     )
 
     songs = info.get_ids("test", orig=True)
     songs = sorted(songs)
     midis = []
     for song in tqdm(songs):
-        path_input = info.id2path(song, orig=True)
+        path_input = info.id2path(song).raw
         path_output = dir_output / f"{song}.mid"
         sv = sv_sampler.random()
         pipeline.wav2midi(
