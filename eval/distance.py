@@ -23,7 +23,7 @@ def main(args):
     no_origs = []
     dists = {}
     for cover in covers:
-        orig = info.id2path(cover.stem, orig=True)
+        orig = info.id2path(cover.stem).raw
         if not orig.exists():
             no_origs.append(cover)
             continue
