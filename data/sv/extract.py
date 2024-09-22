@@ -1,65 +1,86 @@
 import argparse
 from pathlib import Path
+import sys
 import json
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(ROOT))
 
 import numpy as np
 import pretty_midi
 from tqdm import tqdm
 
+from utils import config, info
 
-DIR_NAME_SYNCED = "synced/"
+
+DIR_DATASET = ROOT / config.path.dataset
+DIR_SYNCED = DIR_DATASET / "synced/"
 DIR_NAME_PIANO = "piano/"
+PATH_TMP = ROOT / "data/sv/tmp.json"
+PATH_STYLE_VECTORS = ROOT / config.path.style_vectors
 
-with open("models/config.json", "r") as f:
-    CONFIG = json.load(f)["data"]
-PITCH_MIN = CONFIG["midi"]["note_min"]
-PITCH_MAX = CONFIG["midi"]["note_max"]
-NUM_PITCH = CONFIG["midi"]["num_note"]
-N_VELOCITY = CONFIG["midi"]["num_velocity"]
-SR = CONFIG["feature"]["sr"]
-HOP_LENGTH = CONFIG["feature"]["hop_sample"]
-N_FRAMES = CONFIG["input"]["num_frame"]
-
-PATH_STYLES = "data/.styles.json"
-PATH_STYLE_VECTOR = "data/style_vector.json"
-
+PITCH_MIN = config.data.midi.note_min
+PITCH_MAX = config.data.midi.note_max
+NUM_PITCH = config.data.midi.num_note
+N_VELOCITY = config.data.midi.num_velocity
+SR = config.data.feature.sr
+HOP_LENGTH = config.data.feature.hop_sample
+N_FRAMES = config.data.input.num_frame
 BIN_VEL = np.arange(1, N_VELOCITY)
 BIN_PITCH = np.arange(PITCH_MIN, PITCH_MAX + 1)
 
 
 def main(args):
-    dir_dataset = Path(args.path_dataset)
-    dir_synced = dir_dataset / DIR_NAME_SYNCED
-
-    pianos = list(dir_synced.glob("*/piano/*.mid"))
+    pianos = list(DIR_SYNCED.glob("*/piano/*.mid"))
     pianos = sorted(pianos)
 
-    if (not args.overwrite) and Path(PATH_STYLES).exists():
-        with open(PATH_STYLES, "r") as f:
-            raw_styles = json.load(f)
-            raw_styles = raw_styles["raw_styles"]
-            params = raw_styles["params"]
+    if (not args.overwrite) and Path(PATH_TMP).exists():
+        with open(PATH_TMP, "r") as f:
+            tmp = json.load(f)
+            raw_styles = tmp["raw_styles"]
+            params = tmp["params"]
     else:
-        raw_styles, ignore_ids = extract_raw_styles(pianos, min_notes=args.min_notes)
+        raw_styles, ignore_ids = extract_raw_styles(pianos, args.min_notes)
         params = estimate_params(raw_styles, ignore_ids)
         out = {
             "raw_styles": raw_styles,
             "params": params
         }
-        with open(PATH_STYLES, "w") as f:
+        with open(PATH_TMP, "w") as f:
             json.dump(out, f)
-
     style_vectors, style_features = create_style_vectors(raw_styles, params)
     out = {
-        "style_vector": style_vectors,
-        "style_feature": style_features,
+        "style_vectors": style_vectors,
+        "style_features": style_features,
         "params": params
     }
-    with open(PATH_STYLE_VECTOR, "w") as f:
+    with open(PATH_STYLE_VECTORS, "w") as f:
         json.dump(out, f)
 
 
-def extract_raw_style(path, min_notes=0):
+def extract_raw_styles(pianos, min_notes=1000):
+    raw_styles = {}
+    ignore_ids = []
+    for piano in tqdm(pianos, desc="Extracting raw styles"):
+        pid = piano.stem
+        status, raw_style = extract_raw_style(piano, min_notes)
+        if status == 1:
+            ignore_ids.append(pid)
+            info.set(pid, "include_dataset", False)
+        elif status == 2:
+            info.set(pid, "include_dataset", False)
+            continue
+        else:
+            info.set(pid, "include_dataset", True)
+
+        raw_styles[pid] = {
+            "dist_vel": raw_style[0],
+            "dist_pitch": raw_style[1],
+            "onset_rates": raw_style[2],
+        }
+    return raw_styles, ignore_ids
+
+def extract_raw_style(path, min_notes=1000):
     midi = pretty_midi.PrettyMIDI(str(path))
     piano_roll = midi.get_piano_roll(int(SR / HOP_LENGTH))
     piano_roll = piano_roll[PITCH_MIN:PITCH_MAX + 1]
@@ -82,24 +103,6 @@ def extract_raw_style(path, min_notes=0):
         onset_rates.append(onset_rate)
 
     return status, (dist_vel, dist_pitch, onset_rates)
-
-
-def extract_raw_styles(pianos, min_notes=0):
-    raw_styles = {}
-    ignore_ids = []
-    for piano in tqdm(pianos, desc="Extracting raw styles"):
-        status, raw_style = extract_raw_style(piano, min_notes)
-        if status == 1:
-            ignore_ids.append(piano.stem)
-        elif status == 2:
-            continue
-
-        raw_styles[piano.stem] = {
-            "dist_vel": raw_style[0],
-            "dist_pitch": raw_style[1],
-            "onset_rates": raw_style[2],
-        }
-    return raw_styles, ignore_ids
 
 
 def estimate_params(raw_styles, ignore_ids):
@@ -130,6 +133,7 @@ def estimate_params(raw_styles, ignore_ids):
 
 
 BIN_DIST = np.array([-2, -4/3, -2/3, 0, 2/3, 4/3, 2])
+
 def create_style_vectors(raw_styles, params):
     mean_vel = params["mean_vel"]
     mean_pitch = params["mean_pitch"]
@@ -150,6 +154,7 @@ def create_style_vectors(raw_styles, params):
         pitches = sum([[p] * n for p, n in zip(BIN_PITCH, dist_pitch)], [])
         vels = np.array(vels)
         pitches = np.array(pitches)
+        onset_rates = np.array(onset_rates)
 
         # Normalize
         vels_norm = (vels - mean_vel) / std_vel
@@ -182,9 +187,8 @@ def get_distribution(data):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/")
-    parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--min_notes", type=int, default=1000)
+    parser = argparse.ArgumentParser("Extract style vectors.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--min_notes", type=int, default=1000, help="The minimum number of notes, below which they will not be included in the training dataset. Defaults to 1000.")
     args = parser.parse_args()
     main(args)

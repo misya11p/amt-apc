@@ -4,6 +4,7 @@
 
 
 import os
+import warnings
 from contextlib import redirect_stdout
 
 import numpy as np
@@ -100,42 +101,43 @@ def sync_audio(
 # ------------------------------------------------------------------ <<<
 
 
-import argparse
 from pathlib import Path
-import shutil
-import multiprocessing
-import warnings
+import sys
+import argparse
 import time
+import shutil
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 import librosa
 import soundfile as sf
 
+from utils import config, info
 
-DIR_NAME_EXTRACTED = "extracted/"
-DIR_NAME_SYNCED = "synced/"
+
+DIR_DATASET = ROOT / config.path.dataset
+DIR_RAW = DIR_DATASET / "raw/"
+DIR_SYNCED = DIR_DATASET / "synced/"
+DIR_SYNCED.mkdir(exist_ok=True)
 DIR_NAME_PIANO = "piano/"
+SR = config.data.feature.sr
 
 
 def main(args):
-    dir_dataset = Path(args.path_dataset)
-    dir_input = dir_dataset / DIR_NAME_EXTRACTED
-    dir_output = dir_dataset / DIR_NAME_SYNCED
-    dir_output.mkdir(exist_ok=True)
-
-    sync_args = []
-    for song in dir_input.glob("*/"):
-        sync_args.append((song, dir_output, args.sr, args.overwrite))
-
-    with multiprocessing.Pool(args.n_processes) as pool:
-        pool.starmap(_sync_song, sync_args)
+    songs = DIR_RAW.glob("*/")
+    songs = sorted(songs)
+    n_songs = len(songs)
+    for n, song in enumerate(songs, 1):
+        print(f"{n}/{n_songs}: {song.name}", end=" ", flush=True)
+        sync_song(song, DIR_SYNCED, args.overwrite)
 
 
-def _sync_song(
+def sync_song(
     dir_song: str,
     dir_output: str,
-    sr: int | None = None,
     overwrite: bool = False
-):
+) -> None:
     """
     Synchronize the piano audio with the original audio in given song
     directory.
@@ -143,44 +145,42 @@ def _sync_song(
     Args:
         dir_song (str): Path to the song directory.
         dir_output (str): Path to the output directory.
-        sr (int | None, optional):
-            Sample rate of the audio files. If None, use the default
-            sample rate of librosa (22050). Defaults to None.
+        overwrite (bool): Overwrite existing files.
     """
     dir_output_song = dir_output / dir_song.name
-
-    start_time = time.time()
+    time_start = time.time()
     orig = next(dir_song.glob("*.wav"))
     orig_new = dir_output_song / orig.name
     flag_load_orig = False
 
     if overwrite or (not orig_new.exists()):
         dir_output_song.mkdir(exist_ok=True)
-        y_orig, sr = librosa.load(str(orig), sr=sr)
+        y_orig, _ = librosa.load(str(orig), sr=SR)
         flag_load_orig = True
         shutil.copy(orig, str(orig_new))
 
     dir_output_song_piano = dir_output_song / DIR_NAME_PIANO
     dir_output_song_piano.mkdir(exist_ok=True)
-    for i, piano in enumerate((dir_song / DIR_NAME_PIANO).glob("*.wav"), 1):
+    for piano in (dir_song / DIR_NAME_PIANO).glob("*.wav"):
         piano_new = dir_output_song_piano / piano.name
         if overwrite or (not piano_new.exists()):
             if not flag_load_orig:
-                y_orig, sr = librosa.load(str(orig), sr=sr)
+                y_orig, _ = librosa.load(str(orig), sr=SR)
                 flag_load_orig = True
-            y_piano, _ = librosa.load(str(piano), sr=sr)
-            y_piano_synced = sync_audio(y_piano, y_orig, sr)
-            sf.write(str(piano_new), y_piano_synced, sr)
+            y_piano, _ = librosa.load(str(piano), sr=SR)
+            y_piano_synced = sync_audio(y_piano, y_orig, SR)
+            sf.write(str(piano_new), y_piano_synced, SR)
 
-    running_time = time.strftime("%Mm%Ss", time.gmtime(time.time() - start_time))
-    print(f"Synced ({i} pianos) '{dir_song.name}' in {running_time}.")
+        info.update(piano.stem, {
+            "original": orig.stem,
+            "title": orig.parent.stem,
+        })
+        print(".", end="", flush=True)
+    print(f" Done ({time.time() - time_start:.2f}s)", flush=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Synchronize piano audio with original audio.")
-    parser.add_argument("-d", "--path_dataset", type=str, default="./dataset/", help="Path to the datasets directory. Defaults to './datasets/'.")
-    parser.add_argument("-n", "--n_processes", type=int, default=1, help="Number of processes to use. Defaults to 1.")
-    parser.add_argument("--sr", type=int, default=22050, help="Sample rate of the audio files. Defaults to 22050.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     args = parser.parse_args()
     main(args)

@@ -5,14 +5,14 @@ import numpy as np
 from models import Pipeline
 
 
-PIPELINE = Pipeline(skip_load_model=True)
+PIPELINE = Pipeline(no_model=True)
 CONFIG = PIPELINE.config
 
 
 def wav2feature(path_input: str) -> torch.Tensor:
     """
     Convert a wav file to a feature:
-    mel-spectrogram according to models/config.json
+    mel-spectrogram according to config.json
 
     Args:
         path_input (str): Path to the input wav file.

@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import torchaudio
 import pretty_midi
+from tqdm import tqdm
 
 class AMT():
     def __init__(self, config, model_path, batch_size=1, verbose_flag=False):
@@ -63,7 +64,7 @@ class AMT():
         return a_feature
 
 
-    def transcript(self, a_feature, sv=None, mode='combination', ablation_flag=False): # Modified from the original (this line)
+    def transcript(self, a_feature, sv=None, silent=True, mode='combination', ablation_flag=False): # Modified from the original (this line)
         # a_feature: [num_frame, n_mels]
         a_feature = np.array(a_feature, dtype=np.float32)
 
@@ -85,7 +86,7 @@ class AMT():
             a_output_velocity_B = np.zeros((a_feature.shape[0]+len_s, self.config['midi']['num_note']), dtype=np.int8)
 
         self.model.eval()
-        for i in range(0, a_feature.shape[0], self.config['input']['num_frame']):
+        for i in tqdm(range(0, a_feature.shape[0], self.config['input']['num_frame']), desc="Processing each segment", disable=silent): # Modified from the original (this line)
             input_spec = (a_input[i:i+self.config['input']['margin_b']+self.config['input']['num_frame']+self.config['input']['margin_f']]).T.unsqueeze(0).to(self.device)
 
             with torch.no_grad():

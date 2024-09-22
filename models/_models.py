@@ -1,9 +1,14 @@
-import json
+from pathlib import Path
+import sys
 from collections import OrderedDict
+from typing import List, Tuple
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
+
+import numpy as np
 import torch
 import torch.nn as nn
-from collections import OrderedDict
 
 from .hFT_Transformer.amt import AMT
 from .hFT_Transformer.model_spec2midi import (
@@ -11,62 +16,64 @@ from .hFT_Transformer.model_spec2midi import (
     Decoder_SPEC2MIDI as Decoder,
     Model_SPEC2MIDI as BaseSpec2MIDI,
 )
+from utils import config
 
 
-DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-with open("models/config.json", "r") as f:
-    CONFIG = json.load(f)
+DEVICE_DEFAULT = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+Array = List | Tuple | np.ndarray | torch.Tensor
 
 
 class Pipeline(AMT):
     def __init__(
         self,
-        device: torch.device = DEFAULT_DEVICE,
-        amt: bool = False,
-        sv_dim: int = 0,
         path_model: str | None = None,
-        skip_load_model: bool = False,
+        device: torch.device = DEVICE_DEFAULT,
+        amt: bool = False,
+        with_sv: bool = True,
+        no_load: bool = False,
+        no_model: bool = False,
     ):
         """
         Pipeline for converting audio to MIDI. Contains some methods for
         converting audio to MIDI, models, and configurations.
 
         Args:
-            device (torch.device, optional):
-                Device to use for the model. Defaults to auto.
-            amt (bool, optional):
-                Whether to use the AMT model.
-                Defaults to False (use the cover model).
-            sv_dim (int, optional):
-                Dimension of the style vector. If 0, the style vector is
-                not used. Defaults to 0.
             path_model (str, optional):
-                Path to the model. Defaults to None.
-            skip_load_model (bool, optional):
-                Whether to skip loading the model. Defaults to False.
+                Path to the model. If None, use the default model
+                (CONFIG.PATH.AMT or CONFIG.PATH.APC). Defaults to None.
+            device (torch.device, optional):
+                Device to use for the model. Defaults to auto (CUDA if
+                available else CPU).
+            amt (bool, optional):
+                Whether to use the AMT model. Defaults to False (use the
+                APC model).
+            with_sv (bool, optional):
+                Whether to use the style vector. Defaults to True.
+            no_load (bool, optional):
+                Do not load the model. Defaults to False.
+            no_model (bool, optional):
+                Do not own the model. Defaults to False.
         """
         self.device = device
-        self.sv_dim = sv_dim
-        if skip_load_model:
+        self.with_sv = with_sv
+        if no_model:
             self.model = None
         else:
             self.model = load_model(
                 device=self.device,
                 amt=amt,
                 path_model=path_model,
-                sv_dim=sv_dim,
+                with_sv=with_sv,
+                no_load=no_load,
             )
-        self.config = CONFIG["data"]
+        self.config = config.data
 
     def wav2midi(
         self,
         path_input: str,
         path_output: str,
-        sv: None | torch.Tensor = None,
-        thred_onset: float = 0.5,
-        thred_offset: float = 0.5,
-        thred_mpe: float = 0.5,
-        min_length: float = 0.,
+        sv: None | Array = None,
+        silent: bool = True,
     ):
         """
         Convert audio to MIDI.
@@ -74,13 +81,10 @@ class Pipeline(AMT):
         Args:
             path_input (str): Path to the input audio file.
             path_output (str): Path to the output MIDI file.
-            sv (None | torch.Tensor, optional): Style vector.
-            thred_onset (float, optional): Threshold for onset. Defaults to 0.5.
-            thred_offset (float, optional): Threshold for offset. Defaults to 0.5.
-            thred_mpe (float, optional): Threshold for MPE. Defaults to 0.5.
-            min_length (float, optional): Minimum length (s) of the note. Defaults to 0.
+            sv (None | Array, optional): Style vector. Defaults to None.
         """
         if sv is not None:
+            sv = torch.tensor(sv)
             if sv.dim() == 1:
                 sv = sv.unsqueeze(0)
             if sv.dim() == 2:
@@ -90,17 +94,21 @@ class Pipeline(AMT):
             sv = sv.to(self.device)
 
         feature = self.wav2feature(path_input)
-        _, _, _, _, onset, offset, mpe, velocity = self.transcript(feature, sv)
+        _, _, _, _, onset, offset, frame, velocity = self.transcript(feature, sv, silent)
+        if not silent:
+            print("Converting to MIDI ...", end=" ", flush=True)
         note = self.mpe2note(
             onset,
             offset,
-            mpe,
+            frame,
             velocity,
-            thred_onset=thred_onset,
-            thred_offset=thred_offset,
-            thred_mpe=thred_mpe,
+            thred_onset=config.infer.threshold.onset,
+            thred_offset=config.infer.threshold.offset,
+            thred_mpe=config.infer.threshold.frame,
         )
-        self.note2midi(note, path_output, min_length)
+        self.note2midi(note, path_output, config.infer.min_duration)
+        if not silent:
+            print("Done.")
 
 
 class Spec2MIDI(BaseSpec2MIDI):
@@ -147,62 +155,64 @@ class Spec2MIDI(BaseSpec2MIDI):
 
 
 def load_model(
-    device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-    amt: bool = False,
     path_model: str | None = None,
-    sv_dim: int = 0,
+    device: torch.device = DEVICE_DEFAULT,
+    amt: bool = False,
+    with_sv: bool = True,
     no_load: bool = False,
 ) -> Spec2MIDI:
     """
-    Load the model according to models/config.json.
+    Load the model.
 
     Args:
-        device (torch.device, optional):
-            Device to use for the model. Defaults to
-            torch.device("cuda" if torch.cuda.is_available() else "cpu").
-        amt (bool, optional):
-            Whether to use the AMT model.
-            Defaults to False (use the cover model).
         path_model (str, optional):
-            Path to the model. Defaults to None.
-        sv_dim (int, optional):
-            Dimension of the style vector. If 0, the style vector is not
-            used. Defaults to 0.
+            Path to the model. If None, use the default model
+            (CONFIG.PATH.AMT or CONFIG.PATH.APC). Defaults to None.
+        device (torch.device, optional):
+            Device to use for the model. Defaults to auto (CUDA if
+            available else CPU).
+        amt (bool, optional):
+            Whether to use the AMT model. Defaults to False (use the
+            APC model).
+        with_sv (bool, optional):
+            Whether to use the style vector. Defaults to True.
         no_load (bool, optional):
-            Whether to skip loading the model parameters. Defaults to False.
+            Do not load the model. Defaults to False.
     Returns:
-        Spec2MIDI: Model.
+        Spec2MIDI: The model.
     """
     if amt:
-        path_model = path_model or CONFIG["default"]["amt"]
+        path_model = path_model or str(ROOT / config.path.amt)
+        with_sv = False
     else:
-        path_model = path_model or CONFIG["default"]["pc"]
+        path_model = path_model or str(ROOT / config.path.apc)
 
     encoder = Encoder(
-        n_margin=CONFIG["data"]["input"]["margin_b"],
-        n_frame=CONFIG["data"]["input"]["num_frame"],
-        n_bin=CONFIG["data"]["feature"]["n_bins"],
-        cnn_channel=CONFIG["model"]["cnn"]["channel"],
-        cnn_kernel=CONFIG["model"]["cnn"]["kernel"],
-        hid_dim=CONFIG["model"]["transformer"]["hid_dim"],
-        n_layers=CONFIG["model"]["transformer"]["encoder"]["n_layer"],
-        n_heads=CONFIG["model"]["transformer"]["encoder"]["n_head"],
-        pf_dim=CONFIG["model"]["transformer"]["pf_dim"],
-        dropout=CONFIG["model"]["training"]["dropout"],
+        n_margin=config.data.input.margin_b,
+        n_frame=config.data.input.num_frame,
+        n_bin=config.data.feature.n_bins,
+        cnn_channel=config.model.cnn.channel,
+        cnn_kernel=config.model.cnn.kernel,
+        hid_dim=config.model.transformer.hid_dim,
+        n_layers=config.model.transformer.encoder.n_layer,
+        n_heads=config.model.transformer.encoder.n_head,
+        pf_dim=config.model.transformer.pf_dim,
+        dropout=config.model.dropout,
         device=device,
     )
     decoder = Decoder(
-        n_frame=CONFIG["data"]["input"]["num_frame"],
-        n_bin=CONFIG["data"]["feature"]["n_bins"],
-        n_note=CONFIG["data"]["midi"]["num_note"],
-        n_velocity=CONFIG["data"]["midi"]["num_velocity"],
-        hid_dim=CONFIG["model"]["transformer"]["hid_dim"],
-        n_layers=CONFIG["model"]["transformer"]["decoder"]["n_layer"],
-        n_heads=CONFIG["model"]["transformer"]["decoder"]["n_head"],
-        pf_dim=CONFIG["model"]["transformer"]["pf_dim"],
-        dropout=CONFIG["model"]["training"]["dropout"],
+        n_frame=config.data.input.num_frame,
+        n_bin=config.data.feature.n_bins,
+        n_note=config.data.midi.num_note,
+        n_velocity=config.data.midi.num_velocity,
+        hid_dim=config.model.transformer.hid_dim,
+        n_layers=config.model.transformer.decoder.n_layer,
+        n_heads=config.model.transformer.decoder.n_head,
+        pf_dim=config.model.transformer.pf_dim,
+        dropout=config.model.dropout,
         device=device,
     )
+    sv_dim = config.model.sv_dim if with_sv else 0
     model = Spec2MIDI(encoder, decoder, sv_dim=sv_dim)
     if not no_load:
         state_dict = torch.load(path_model, weights_only=True)
@@ -211,7 +221,7 @@ def load_model(
     return model
 
 
-def save_model(model: nn.Module, path: str):
+def save_model(model: nn.Module, path: str) -> None:
     """
     Save the model.
 
@@ -222,7 +232,11 @@ def save_model(model: nn.Module, path: str):
     state_dict = model.state_dict()
     correct_state_dict = OrderedDict()
     for key, value in state_dict.items():
-        key = key.replace("_orig_mod.", "").replace("module.", "")
+        key = key.replace("_orig_mod.", "")
+            # If the model has been compiled with `torch.compile()`,
+            # "_orig_mod." is appended to the key
+        key = key.replace("module.", "")
+            # If the model is saved with `torch.nn.DataParallel()`,
+            # "module." is appended to the key
         correct_state_dict[key] = value
-
     torch.save(correct_state_dict, path)
