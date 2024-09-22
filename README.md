@@ -51,7 +51,13 @@ python infer input.wav --style level3
 pip install -r requirements.txt
 ```
 
-2. Download the dataset
+2. Download the pre-trained AMT model
+
+```bash
+wget -P models/params/ https://github.com/misya11p/amt-apc/releases/download/beta/amt.pth
+```
+
+3. Download the dataset
 
 ```bash
 python download.py
@@ -59,7 +65,7 @@ python download.py
 
 The dataset directory is set to `dataset/` by default. You can change this directory by modifying `path.dataset` in `config.json`.
 
-3. Create the dataset
+4. Create the dataset
 
 ```bash
 python data/sync.py
@@ -69,7 +75,7 @@ python data/create_labels.py
 python data/create_dataset.py
 ```
 
-4. Train the model
+5. Train the model
 
 ```bash
 python train --n_gpus 1
