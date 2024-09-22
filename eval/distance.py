@@ -7,8 +7,8 @@ ROOT = HERE.parent
 sys.path.append(str(HERE))
 sys.path.append(str(ROOT))
 
-from ChromaCoverId import (
-    ChromaFeatures,
+from ChromaCoverId.chroma_features import ChromaFeatures
+from ChromaCoverId.cover_similarity_measures import (
     cross_recurrent_plot,
     qmax_measure,
 )
@@ -21,16 +21,23 @@ def main(args):
     covers = list(dir_input.glob("*.wav"))
     covers = sorted(covers)
 
+    if not covers:
+        print("No covers found.")
+        return
+
     no_origs = []
     dists = {}
     for cover in covers:
         orig = info.id2path(cover.stem).raw
         if not orig.exists():
             no_origs.append(cover)
+            print(f"No original found for {cover.stem}.")
             continue
         dist = get_distance(orig, cover)
         dists[cover.stem] = dist
-    write_result(args.path_result, dists, no_origs)
+
+    if dists:
+        write_result(args.path_result, dists, no_origs)
 
 
 def get_distance(path1, path2):
@@ -60,7 +67,7 @@ def write_result(path, dists, no_origs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Evaluate cover similarity using qmax measure.")
-    parser.add_argument("--dir_input", type=str, default="ROOT/eval/data/", help="Directory containing cover WAV files.")
-    parser.add_argument("--path_result", type=str, default="ROOT/eval/qmax.txt", help="Path to save the result.")
+    parser.add_argument("--dir_input", type=str, default="eval/data/", help="Directory containing cover WAV files. Defaults to 'ROOT/eval/data/'.")
+    parser.add_argument("--path_result", type=str, default="eval/qmax.txt", help="Path to save the result. Defaults to 'ROOT/eval/qmax.txt'.")
     args = parser.parse_args()
     main(args)
