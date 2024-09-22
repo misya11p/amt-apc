@@ -77,7 +77,10 @@ python train --n_gpus 1
 
 5. Evaluate the model
 
+Calculate $\mathcal Q_{\text{max}}$.
+
 ```bash
+git clone https://github.com/albincorreya/ChromaCoverId.git eval/ChromaCoverId
 python eval/cover.py
 python eval/distance.py
 ```
