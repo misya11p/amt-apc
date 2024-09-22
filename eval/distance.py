@@ -2,7 +2,9 @@ import argparse
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).parent.parent
+HERE = Path(__file__).parent
+ROOT = HERE.parent
+sys.path.append(str(HERE))
 sys.path.append(str(ROOT))
 
 from ChromaCoverId import (
