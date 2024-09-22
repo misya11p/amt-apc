@@ -70,10 +70,10 @@ def train(
             loss, f1, f1_onset, f1_frame, f1_velocity = prog.now_values()
             with open(file_log, "a") as f:
                 f.write(
-                    f"{i}iter, loss: {loss:.2f}, F1 avg: {f1:.2f}, "
-                    f"F1 onset: {f1_onset:.2f}, "
-                    f"F1 frame: {f1_frame:.2f}, "
-                    f"F1 velocity: {f1_velocity:.2f}\n"
+                    f"{i}iter, loss: {loss:.3f}, F1 avg: {f1:.3f}, "
+                    f"F1 onset: {f1_onset:.3f}, "
+                    f"F1 frame: {f1_frame:.3f}, "
+                    f"F1 velocity: {f1_velocity:.3f}\n"
                 )
 
 
@@ -138,22 +138,23 @@ class Trainer:
             sampler=self.sampler,
             shuffle=(self.sampler is None),
         )
+        if self.is_parent:
+            date = datetime.now().strftime("%Y-%m%d-%H%M%S")
+            self.dir_checkpoint = DIR_CHECKPOINTS / date
+            self.dir_checkpoint.mkdir(parents=True)
+            self.file_log = self.dir_checkpoint / NAME_FILE_LOG
+            self.prog = dlprog.train_progress(width=20, label=PROG_LABELS, round=3)
+            self.prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
+            print(f"Checkpoint directory: {self.dir_checkpoint}")
+            print("Setup done.")
+        else:
+            self.prog = None
+            self.file_log = None
 
     def __call__(self, device: int | torch.device) -> None:
         """Training loop."""
+        self.is_parent = (not self.ddp) or (device == 0)
         self.setup(device)
-
-        is_parent = (not self.ddp) or (device == 0)
-        if is_parent:
-            date = datetime.now().strftime("%Y-%m%d-%H%M%S")
-            dir_checkpoint = DIR_CHECKPOINTS / date
-            dir_checkpoint.mkdir(parents=True)
-            file_log = dir_checkpoint / NAME_FILE_LOG
-            prog = dlprog.train_progress(width=20, label=PROG_LABELS)
-            prog.start(n_epochs=self.n_epochs, n_iter=len(self.dataloader))
-        else:
-            prog = None
-            file_log = None
 
         for n in range(self.n_epochs):
             if self.ddp:
@@ -163,21 +164,21 @@ class Trainer:
                 optimizer=self.optimizer,
                 dataloader=self.dataloader,
                 device=device,
-                freq_save=self.freq_save if is_parent else 0,
-                prog=prog,
-                file_log=file_log,
+                freq_save=self.freq_save if self.is_parent else 0,
+                prog=self.prog,
+                file_log=self.file_log,
             )
 
-            if is_parent:
-                loss, f1, f1_onset, f1_frame, f1_velocity = prog.values[-1]
-                path_pc_epoch = dir_checkpoint / f"{n + 1}.pth"
+            if self.is_parent:
+                loss, f1, f1_onset, f1_frame, f1_velocity = self.prog.values[-1]
+                path_pc_epoch = self.dir_checkpoint / f"{n + 1}.pth"
                 save_model(self.model, path_pc_epoch)
-                with open(file_log, "a") as f:
+                with open(self.file_log, "a") as f:
                     time = datetime.now().strftime("%Y/%m/%d %H:%M")
                     f.write(
                         f"{time}, epoch {n + 1} Finished, "
-                        f"loss: {loss:.2f}, F1 avg: {f1:.2f}, "
-                        f"F1 onset: {f1_onset:.2f}, "
-                        f"F1 frame: {f1_frame:.2f}, "
-                        f"F1 velocity: {f1_velocity:.2f}\n"
+                        f"loss: {loss:.3f}, F1 avg: {f1:.3f}, "
+                        f"F1 onset: {f1_onset:.3f}, "
+                        f"F1 frame: {f1_frame:.3f}, "
+                        f"F1 velocity: {f1_velocity:.3f}\n"
                     )

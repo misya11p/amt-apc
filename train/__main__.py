@@ -12,10 +12,15 @@ DEVICE_CUDA = torch.device("cuda")
 
 
 def main(args):
+    print("Start training.")
+
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
 
     dataset = PianoCoversDataset(split=args.split)
+    print(f"Dataset split: {args.split}.", flush=True)
+    print(f"Number of samples: {len(dataset)}.", flush=True)
+
     trainer = Trainer(
         path_model=args.path_model,
         dataset=dataset,
@@ -25,12 +30,14 @@ def main(args):
         freq_save=args.freq_save,
     )
     if args.n_gpus >= 2:
+        print(f"Number of GPUs: {args.n_gpus}, using DDP.", flush=True)
         mp.spawn(
             trainer,
             nprocs=args.n_gpus,
             join=True,
         )
     else:
+        print("Number of GPUs: 1", flush=True)
         trainer(DEVICE_CUDA)
 
 
