@@ -22,7 +22,7 @@ pip install torch torchaudio pretty-midi tqdm
 2. Download the pre-trained model
 
 ```bash
-wget
+wget -P models/params/ https://github.com/misya11p/amt-apc/releases/download/beta/apc.pth
 ```
 
 3. Run the inference code
