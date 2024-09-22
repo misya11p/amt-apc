@@ -7,6 +7,8 @@ AMT-APC is a method for training an automatic piano cover generation model by fi
 
 ## Usage (Piano Cover Generation)
 
+Python version: 3.10
+
 1. Install dependencies
 
 ```bash
@@ -44,6 +46,8 @@ python infer input.wav --style level3
 ```
 
 ## Usage (Training & Evaluation)
+
+Python version: 3.10
 
 1. Install dependencies
 
