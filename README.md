@@ -1,9 +1,9 @@
 # AMT-APC
 
-AMT-APC is a method to train an automatic piano cover generation model by fine-tuning a AMT (Automatic Music Transcription) model.
+AMT-APC is a method for training an automatic piano cover generation model by fine-tuning an AMT (Automatic Music Transcription) model.
 
 - Project page: [AMT-APC](https://misya11p.github.io/amt-apc/)
-- Paper: [AMT-APC: ](https://arxiv.org/abs/)
+- Paper: Not yet published
 
 ## Usage (Piano Cover Generation)
 
@@ -13,7 +13,7 @@ AMT-APC is a method to train an automatic piano cover generation model by fine-t
 pip install -r requirements.txt
 ```
 
-or, if you only execute the inference code, you can install only the necessary packages.
+Alternatively, if you only need to run the inference code, you can install just the necessary packages.
 
 ```bash
 pip install torch torchaudio pretty-midi tqdm
@@ -31,13 +31,13 @@ wget
 python infer input.wav
 ```
 
-You can also input the YouTube URL (requires [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)).
+You can also input a YouTube URL (requires [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)).
 
 ```bash
 python infer 'https://www.youtube.com/watch?v=...'
 ```
 
-You can also specify the style (`level1`, `level2`, `level3`).
+You can also specify a style (`level1`, `level2`, `level3`).
 
 ```bash
 python infer input.wav --style level3
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 python download.py
 ```
 
-The dataset directory is `dataset/` by default. You can change the directory by changing `path.dataset` in `config.json`.
+The dataset directory is set to `dataset/` by default. You can change this directory by modifying `path.dataset` in `config.json`.
 
 3. Create the dataset
 
@@ -84,4 +84,4 @@ python eval/distance.py
 
 ### Options
 
-Detailed configuration can be done via `config.json`, or using command line options, which are explained with `--help`. These default values ​​are the ones used in the experiments in the paper.
+Detailed configuration can be done through `config.json` or by using command line options, which are explained with --help. The default values are those used in the experiments in the paper.
