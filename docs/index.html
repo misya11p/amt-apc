@@ -13,10 +13,10 @@
   </div>
   <div id="content" class="max-w-screen-md mx-auto p-6">
     <div id="description" class="py-8">
-      <p>We are developing a new piano cover model. The demo video is posted below.</p>
+      <p>We are developing a automatic piano cover generation model. The demo video is posted below.</p>
       <ul class="list-disc ml-4 pt-2">
-        <li>Repository: <a href="https://github.com/misya11p/amt-apc" class="text-blue-500 hover:text-blue-700" target="_blank" rel="noopener">misya11p/amt-apc</a></li>
-        <li>Paper: <a href="https://arxiv.org/abs/2409.14086" class="text-blue-500 hover:text-blue-700" target="_blank" rel="noopener">[2409.14086] AMT-APC: Automatic Piano Cover by Fine-Tuning an Automatic Music Transcription Model</a></li>
+        <li>Repository: <a href="https://github.com/misya11p/amt-apc" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">misya11p/amt-apc</a></li>
+        <li>Paper: <a href="https://arxiv.org/abs/2409.14086" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">[2409.14086] AMT-APC: Automatic Piano Cover by Fine-Tuning an Automatic Music Transcription Model</a></li>
       </ul>
     </div>
     <div id="demo" class="py-8">
@@ -24,21 +24,26 @@
       <div class="demo-song py-4">
         <h3 class="text-xl py-4">Lilac / Mrs. GREEN APPLE</h3>
         <iframe class="w-5/6 aspect-video mx-auto" src="https://www.youtube.com/embed/fHA1xwjGsg0?si=RvkOFHwDgxIoAlYx" title="YouTube video player" frame="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        <p class="py-4">Original: <a href="https://youtu.be/QjrkrVmC-8M" class="text-blue-500 hover:text-blue-700" target="_blank" rel="noopener">Mrs. GREEN APPLE「ライラック」Official Music Video - YouTube</a></p>
+        <p class="py-4">Original: <a href="https://youtu.be/QjrkrVmC-8M" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">Mrs. GREEN APPLE「ライラック」Official Music Video - YouTube</a></p>
       </div>
       <div class="demo-song py-4">
         <h3 class="text-xl py-4">Himawari / Ado</h3>
         <iframe class="w-5/6 aspect-video mx-auto" src="https://www.youtube.com/embed/uw9RRGNMKkk?si=v0A0rzTx_hg55PDj" title="YouTube video player" frame="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        <p class="py-4">Original: <a href="https://youtu.be/aOKa-5AHCtU?si=cZa0oxFhv2eJFj6D" class="text-blue-500 hover:text-blue-700" target="_blank" rel="noopener">【Ado】向日葵 - YouTube</a></p>
+        <p class="py-4">Original: <a href="https://youtu.be/aOKa-5AHCtU?si=cZa0oxFhv2eJFj6D" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">【Ado】向日葵 - YouTube</a></p>
       </div>
     </div>
-    <div id="technology" class="py-8 h-80">
+    <div id="technology" class="py-8">
       <h2 class="text-4xl py-4 border-b border-pink-500">Technology</h2>
-        <p class="my-4">Not yet published</p>
+        <p class="my-4">
+          AMT-APC is a method for training an automatic piano cover generation model by fine-tuning an AMT (Automatic Music Transcription) model.
+          We employ the <a href="https://github.com/sony/hFT-Transformer" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">hFT-Transformer</a> as the base AMT model.
+          The model is trained on a piano cover dataset collected from YouTube.
+        </p>
+        <img src="static/overview.png" alt="overview" class="w-4/5 mx-auto p-8">
     </div>
   </div>
   <footer class="py-4 w-4/5 mx-auto text-center border-t-2">
-    <p></p>
+    <p>Contact: <a href="https://twitter.com/ds33miya" class="text-pink-500 hover:text-pink-700" target="_blank" rel="noopener">@ds33miya</a></p>
   </footer>
 </body>
 </html>
