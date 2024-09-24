@@ -3,7 +3,7 @@
 AMT-APC is a method for training an automatic piano cover generation model by fine-tuning an AMT (Automatic Music Transcription) model.
 
 - Project page: [AMT-APC](https://misya11p.github.io/amt-apc/)
-- Paper: Not yet published
+- Paper: [[2409.14086] AMT-APC: Automatic Piano Cover by Fine-Tuning an Automatic Music Transcription Model](https://arxiv.org/abs/2409.14086)
 
 ## Usage (Piano Cover Generation)
 
