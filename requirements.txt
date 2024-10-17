@@ -1,5 +1,5 @@
 dlprog==1.2.8
-essentia-2.1b6.dev1110
+essentia==2.1b6.dev1110
 librosa==0.10.2.post1
 midi2audio==0.1.1
 pytsmod==0.3.8
