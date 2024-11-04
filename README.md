@@ -97,4 +97,4 @@ python eval/distance.py
 
 ### Options
 
-Detailed configuration can be done through `config.json` or by using command line options, which are explained with --help. The default values are those used in the experiments in the paper.
+Detailed configuration can be done through `config.json` or by using command line options, which are explained with `--help`. The default values are those used in the experiments in the paper.
