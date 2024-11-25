@@ -91,7 +91,7 @@ class Pipeline(AMT):
                 pass
             else:
                 raise ValueError(f"Invalid shape of style vector: {sv.shape}")
-            sv = sv.to(self.device)
+            sv = sv.to(self.device).to(torch.float32)
 
         feature = self.wav2feature(path_input)
         _, _, _, _, onset, offset, frame, velocity = self.transcript(feature, sv, silent)
