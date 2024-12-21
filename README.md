@@ -98,3 +98,14 @@ python eval/distance.py
 ### Options
 
 Detailed configuration can be done through `config.json` or by using command line options, which are explained with `--help`. The default values are those used in the experiments in the paper.
+
+## Citation
+
+```
+@article{komiya2024,
+  title={AMT-APC: Automatic Piano Cover by Fine-Tuning an Automatic Music Transcription Model},
+  author={Komiya, Kazuma and Fukuhara, Yoshihisa},
+  journal={arXiv preprint arXiv:2409.14086},
+  year={2024}
+}
+```
