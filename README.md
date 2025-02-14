@@ -18,7 +18,7 @@ pip install -r requirements.txt
 Alternatively, if you only need to run the inference code, you can install just the necessary packages.
 
 ```bash
-pip install torch torchaudio pretty-midi tqdm
+pip install torch torchaudio soundfile pretty-midi tqdm
 ```
 
 2. Download the pre-trained model
