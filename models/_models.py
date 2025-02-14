@@ -215,7 +215,11 @@ def load_model(
     sv_dim = config.model.sv_dim if with_sv else 0
     model = Spec2MIDI(encoder, decoder, sv_dim=sv_dim)
     if not no_load:
-        state_dict = torch.load(path_model, weights_only=True)
+        state_dict = torch.load(
+            path_model,
+            weights_only=True,
+            map_location=device
+        )
         model.load_state_dict(state_dict, strict=False)
     model.to(device)
     return model
