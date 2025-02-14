@@ -3,6 +3,7 @@ essentia==2.1b6.dev1110
 librosa==0.10.2.post1
 midi2audio==0.1.1
 pytsmod==0.3.8
+soundfile==0.13.1
 synctoolbox==1.3.2
 torch==2.3.1
 torchaudio==2.3.1

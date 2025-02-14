@@ -24,7 +24,14 @@ def main(args):
     device = torch.device(args.device) if args.device else DEFAULT_DEVICE
 
     # Create MIDI files from WAV files
-    midis = cover(dir_output, args.path_model, device, args.with_sv, args.no_load)
+    midis = cover(
+        dir_output,
+        args.path_model,
+        device,
+        not args.no_sv,
+        args.no_load,
+        args.overwrite
+    )
 
     # Convert MIDI files to audio files
     midi2audio(midis, args.sound_font)
@@ -52,7 +59,8 @@ def cover(dir_output, path_model, device, with_sv, no_load, overwrite):
             midis.append(path_output)
             continue
 
-        sv = sv_sampler.random()
+        sv = sv_sampler.random() if with_sv else None
+        # sv = sv_sampler.sample("level2") if with_sv else None # 安定版
         pipeline.wav2midi(
             path_input=str(path_input),
             path_output=str(path_output),
@@ -79,7 +87,7 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--path_model", type=str, default=None)
     parser.add_argument("--device", type=str, default=None)
-    parser.add_argument("--with_sv", action="store_true")
+    parser.add_argument("--no_sv", action="store_true")
     parser.add_argument("--no_load", action="store_true")
     parser.add_argument("--sound_font", type=str, default=None)
     args = parser.parse_args()
