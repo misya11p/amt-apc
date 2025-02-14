@@ -60,6 +60,7 @@ def cover(dir_output, path_model, device, with_sv, no_load, overwrite):
             continue
 
         sv = sv_sampler.random() if with_sv else None
+        # sv = sv_sampler.sample("level2") if with_sv else None # 安定版
         pipeline.wav2midi(
             path_input=str(path_input),
             path_output=str(path_output),
