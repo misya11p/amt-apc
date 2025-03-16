@@ -183,7 +183,6 @@ def load_model(
     """
     if amt:
         path_model = path_model or str(ROOT / config.path.amt)
-        with_sv = False
     else:
         path_model = path_model or str(ROOT / config.path.apc)
 
